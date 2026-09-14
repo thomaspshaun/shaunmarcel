@@ -1,5 +1,8 @@
 <script lang="ts">
   import Hero from '$lib/components/Hero.svelte';
+  import Timeline from '$lib/components/Timeline.svelte';
+  import VenueMap from '$lib/components/VenueMap.svelte';
+  import Accommodations from '$lib/components/Accommodations.svelte';
   import { site } from '$lib/site-config';
 </script>
 
@@ -10,10 +13,11 @@
 
 <Hero />
 
-<section id="details" class="mx-auto max-w-4xl px-6 py-20 text-center text-slate-600">
-  <p class="text-sm uppercase tracking-[0.3em] text-rose-500">Coming next</p>
-  <p class="mt-4 text-lg">Event schedule, venue map, and accommodation details will appear here.</p>
-</section>
+<div id="details">
+  <Timeline />
+  <VenueMap />
+  <Accommodations />
+</div>
 
 <section id="rsvp" class="mx-auto max-w-4xl px-6 py-20 text-center text-slate-600">
   <p class="text-sm uppercase tracking-[0.3em] text-rose-500">Coming next</p>
