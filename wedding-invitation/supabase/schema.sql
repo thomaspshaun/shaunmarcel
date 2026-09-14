@@ -4,14 +4,20 @@ CREATE TABLE IF NOT EXISTS guests (
   last_name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
+  whatsapp_number TEXT,
   guest_code TEXT UNIQUE,
   guest_type TEXT NOT NULL DEFAULT 'standard' CHECK (guest_type IN ('standard', 'vip', 'family', 'wedding_party')),
   plus_one_allowed BOOLEAN NOT NULL DEFAULT false,
   rsvp_status TEXT DEFAULT 'pending' CHECK (rsvp_status IN ('pending', 'attending', 'declining', 'notified')),
   dietary_notes TEXT,
+  invite_sent_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Safe to re-run on an existing database that was created before these columns existed.
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS invite_sent_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -171,4 +177,46 @@ $$;
 
 REVOKE ALL ON FUNCTION submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Admin access (guest list management + WhatsApp invite sending)
+-- ---------------------------------------------------------------------------
+-- Only a signed-in Supabase Auth user whose email matches ADMIN_EMAIL below
+-- can read/manage the full guest list and see RSVP responses. Public site
+-- visitors never authenticate, so these policies have no effect on the anon
+-- key used by the RSVP form above. IMPORTANT: also disable public sign-ups
+-- in Supabase Dashboard -> Authentication -> Settings, and only ever create
+-- your own admin user manually from that dashboard.
+
+-- Replace with your real admin email before running this file.
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT auth.jwt() ->> 'email' = 'shaun.padachi@gmail.com';
+$$;
+
+DROP POLICY IF EXISTS "Admin can read guests" ON guests;
+CREATE POLICY "Admin can read guests" ON guests
+  FOR SELECT TO authenticated USING (is_admin());
+
+DROP POLICY IF EXISTS "Admin can insert guests" ON guests;
+CREATE POLICY "Admin can insert guests" ON guests
+  FOR INSERT TO authenticated WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can update guests" ON guests;
+CREATE POLICY "Admin can update guests" ON guests
+  FOR UPDATE TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can delete guests" ON guests;
+CREATE POLICY "Admin can delete guests" ON guests
+  FOR DELETE TO authenticated USING (is_admin());
+
+DROP POLICY IF EXISTS "Admin can read rsvps" ON rsvps;
+CREATE POLICY "Admin can read rsvps" ON rsvps
+  FOR SELECT TO authenticated USING (is_admin());
+
 

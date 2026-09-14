@@ -6,6 +6,21 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 
 export const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
+export interface GuestRecord {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  whatsapp_number: string | null;
+  guest_code: string;
+  guest_type: string;
+  plus_one_allowed: boolean;
+  rsvp_status: string;
+  dietary_notes: string | null;
+  invite_sent_at: string | null;
+}
+
 export interface GuestLookupResult {
   id: string;
   first_name: string;

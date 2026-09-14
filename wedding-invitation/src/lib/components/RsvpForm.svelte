@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { findGuestByCode, submitRsvp, type GuestLookupResult } from '$lib/supabase';
 
   type Step = 'lookup' | 'form' | 'success';
@@ -18,6 +19,17 @@
   let notes = $state('');
   let submitLoading = $state(false);
   let submitError = $state('');
+
+  // Pre-fill and auto-lookup the guest code from a personalized invite link
+  // like https://shaunmarcel.co.za/?code=AB12CD (sent via WhatsApp/email).
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefilled = params.get('code');
+    if (prefilled) {
+      code = prefilled.toUpperCase();
+      handleLookup(new Event('submit'));
+    }
+  });
 
   async function handleLookup(e: Event) {
     e.preventDefault();
