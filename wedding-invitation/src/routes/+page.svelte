@@ -3,6 +3,7 @@
   import Timeline from '$lib/components/Timeline.svelte';
   import VenueMap from '$lib/components/VenueMap.svelte';
   import Accommodations from '$lib/components/Accommodations.svelte';
+  import RsvpForm from '$lib/components/RsvpForm.svelte';
   import { site } from '$lib/site-config';
 </script>
 
@@ -19,7 +20,4 @@
   <Accommodations />
 </div>
 
-<section id="rsvp" class="mx-auto max-w-4xl px-6 py-20 text-center text-slate-600">
-  <p class="text-sm uppercase tracking-[0.3em] text-rose-500">Coming next</p>
-  <p class="mt-4 text-lg">The RSVP form will appear here.</p>
-</section>
+<RsvpForm />
