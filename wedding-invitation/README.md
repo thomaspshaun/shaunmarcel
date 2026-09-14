@@ -16,7 +16,7 @@ This project is a mobile-first wedding invitation and information site built wit
 - `src/routes` — page routes and app entry points
 - `src/app.css` — Tailwind and theme styling
 - `supabase/schema.sql` — database schema for guests, RSVPs, comments, and events
-- `.github/workflows/azure-deploy.yml` — Azure deployment pipeline
+- `.github/workflows/azure-deploy.yml` — Azure deployment pipeline (lives at the repository root since GitHub only detects workflows there, even though the app source lives in this `wedding-invitation` subfolder)
 - `.env.example` — environment variables for local development
 
 ## Local setup
