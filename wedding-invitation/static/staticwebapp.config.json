@@ -1,6 +1,10 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/_app/*", "/favicon.svg", "*.{css,js,json,png,jpg,jpeg,svg,webp,ico,txt,xml}"]
+    "exclude": [
+      "/_app/*",
+      "/favicon.svg",
+      "*.{css,js,json,png,jpg,jpeg,svg,webp,ico,txt,xml}"
+    ]
   }
 }

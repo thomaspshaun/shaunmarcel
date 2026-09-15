@@ -11,22 +11,26 @@ export interface CalendarEvent {
 }
 
 function toUtcStamp(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 }
 
 function escapeICSText(text: string): string {
-  return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
 }
 
 export function buildICS(event: CalendarEvent): string {
   const uid = `${event.start.getTime()}-${Math.random().toString(36).slice(2)}@shaunmarcel.co.za`;
 
   return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Shaun & Marcel Wedding//EN',
-    'CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT',
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Shaun & Marcel Wedding//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${toUtcStamp(new Date())}`,
     `DTSTART:${toUtcStamp(event.start)}`,
@@ -34,17 +38,17 @@ export function buildICS(event: CalendarEvent): string {
     `SUMMARY:${escapeICSText(event.title)}`,
     `DESCRIPTION:${escapeICSText(event.description)}`,
     `LOCATION:${escapeICSText(event.location)}`,
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].join('\r\n');
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
 }
 
 /** Triggers a browser download of the event as an .ics file (Apple Calendar / Outlook). */
 export function downloadICS(event: CalendarEvent, filename: string) {
   const ics = buildICS(event);
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
@@ -54,11 +58,11 @@ export function downloadICS(event: CalendarEvent, filename: string) {
 /** Builds a Google Calendar "add event" link for the given event. */
 export function googleCalendarUrl(event: CalendarEvent): string {
   const params = new URLSearchParams({
-    action: 'TEMPLATE',
+    action: "TEMPLATE",
     text: event.title,
     dates: `${toUtcStamp(event.start)}/${toUtcStamp(event.end)}`,
     details: event.description,
-    location: event.location
+    location: event.location,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
