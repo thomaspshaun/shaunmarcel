@@ -54,10 +54,34 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Curated pre-wedding photo gallery. Only the admin adds rows here (via the
+-- admin panel), everyone can view them.
+CREATE TABLE IF NOT EXISTS gallery_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  storage_path TEXT NOT NULL,
+  caption TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Post-wedding guest photo uploads. Anyone (even without an invite code) can
+-- add a row here after uploading their file to the "guest-photos" storage
+-- bucket; everyone can view approved ones.
+CREATE TABLE IF NOT EXISTS guest_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  storage_path TEXT NOT NULL,
+  uploader_name TEXT,
+  caption TEXT,
+  approved BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_guests_guest_code ON guests(guest_code);
 CREATE INDEX IF NOT EXISTS idx_rsvps_guest_id ON rsvps(guest_id);
 CREATE INDEX IF NOT EXISTS idx_comments_approved ON comments(approved, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
+CREATE INDEX IF NOT EXISTS idx_gallery_photos_sort ON gallery_photos(sort_order, created_at);
+CREATE INDEX IF NOT EXISTS idx_guest_photos_approved ON guest_photos(approved, created_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security
@@ -71,10 +95,25 @@ ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rsvps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gallery_photos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE guest_photos ENABLE ROW LEVEL SECURITY;
 
 -- No direct table policies are created for guests/rsvps: all access goes
 -- through the RPC functions below, which run with the table owner's
 -- privileges (SECURITY DEFINER) regardless of RLS.
+
+-- Defined here (before any policy that uses it) so this file can be re-run
+-- top-to-bottom. Only a signed-in Supabase Auth user with this exact email
+-- is treated as the admin. Replace with your real admin email if it changes.
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT auth.jwt() ->> 'email' = 'shaun.padachi@gmail.com';
+$$;
 
 -- Guestbook comments: anyone can read approved comments, anyone can post one.
 DROP POLICY IF EXISTS "Public can read approved comments" ON comments;
@@ -89,6 +128,45 @@ CREATE POLICY "Public can post comments" ON comments
 DROP POLICY IF EXISTS "Public can read events" ON events;
 CREATE POLICY "Public can read events" ON events
   FOR SELECT USING (true);
+
+-- Curated pre-wedding gallery: everyone can view; only the admin can manage.
+DROP POLICY IF EXISTS "Public can read gallery photos" ON gallery_photos;
+CREATE POLICY "Public can read gallery photos" ON gallery_photos
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admin can insert gallery photos" ON gallery_photos;
+CREATE POLICY "Admin can insert gallery photos" ON gallery_photos
+  FOR INSERT TO authenticated WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can update gallery photos" ON gallery_photos;
+CREATE POLICY "Admin can update gallery photos" ON gallery_photos
+  FOR UPDATE TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can delete gallery photos" ON gallery_photos;
+CREATE POLICY "Admin can delete gallery photos" ON gallery_photos
+  FOR DELETE TO authenticated USING (is_admin());
+
+-- Guest photo uploads: anyone can post one (post-wedding, no invite code
+-- needed), anyone can view approved ones, only the admin can moderate/delete.
+DROP POLICY IF EXISTS "Public can read approved guest photos" ON guest_photos;
+CREATE POLICY "Public can read approved guest photos" ON guest_photos
+  FOR SELECT USING (approved = true);
+
+DROP POLICY IF EXISTS "Public can upload guest photos" ON guest_photos;
+CREATE POLICY "Public can upload guest photos" ON guest_photos
+  FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admin can read all guest photos" ON guest_photos;
+CREATE POLICY "Admin can read all guest photos" ON guest_photos
+  FOR SELECT TO authenticated USING (is_admin());
+
+DROP POLICY IF EXISTS "Admin can update guest photos" ON guest_photos;
+CREATE POLICY "Admin can update guest photos" ON guest_photos
+  FOR UPDATE TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can delete guest photos" ON guest_photos;
+CREATE POLICY "Admin can delete guest photos" ON guest_photos
+  FOR DELETE TO authenticated USING (is_admin());
 
 -- ---------------------------------------------------------------------------
 -- RPC: find_guest_by_code
@@ -181,23 +259,10 @@ GRANT EXECUTE ON FUNCTION submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, 
 -- ---------------------------------------------------------------------------
 -- Admin access (guest list management + WhatsApp invite sending)
 -- ---------------------------------------------------------------------------
--- Only a signed-in Supabase Auth user whose email matches ADMIN_EMAIL below
--- can read/manage the full guest list and see RSVP responses. Public site
--- visitors never authenticate, so these policies have no effect on the anon
--- key used by the RSVP form above. IMPORTANT: also disable public sign-ups
--- in Supabase Dashboard -> Authentication -> Settings, and only ever create
--- your own admin user manually from that dashboard.
-
--- Replace with your real admin email before running this file.
-CREATE OR REPLACE FUNCTION is_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT auth.jwt() ->> 'email' = 'shaun.padachi@gmail.com';
-$$;
+-- is_admin() is defined earlier in this file (before it's first used by the
+-- gallery/guest_photos policies). IMPORTANT: also disable public sign-ups in
+-- Supabase Dashboard -> Authentication -> Settings, and only ever create your
+-- own admin user manually from that dashboard.
 
 DROP POLICY IF EXISTS "Admin can read guests" ON guests;
 CREATE POLICY "Admin can read guests" ON guests
@@ -219,4 +284,37 @@ DROP POLICY IF EXISTS "Admin can read rsvps" ON rsvps;
 CREATE POLICY "Admin can read rsvps" ON rsvps
   FOR SELECT TO authenticated USING (is_admin());
 
+-- ---------------------------------------------------------------------------
+-- Storage buckets (photo gallery + guest uploads)
+-- ---------------------------------------------------------------------------
+-- Create two PUBLIC buckets in Supabase Dashboard -> Storage before running
+-- this section (bucket creation via SQL varies by project, the dashboard is
+-- the most reliable way):
+--   1. "gallery"       - curated pre-wedding photos, admin uploads only
+--   2. "guest-photos"  - post-wedding photos guests upload themselves
+-- Both must be marked "Public bucket" so uploaded images can be viewed via a
+-- plain URL without needing a signed link.
 
+DROP POLICY IF EXISTS "Public can view gallery bucket" ON storage.objects;
+CREATE POLICY "Public can view gallery bucket" ON storage.objects
+  FOR SELECT USING (bucket_id = 'gallery');
+
+DROP POLICY IF EXISTS "Admin can upload to gallery bucket" ON storage.objects;
+CREATE POLICY "Admin can upload to gallery bucket" ON storage.objects
+  FOR INSERT TO authenticated WITH CHECK (bucket_id = 'gallery' AND is_admin());
+
+DROP POLICY IF EXISTS "Admin can delete from gallery bucket" ON storage.objects;
+CREATE POLICY "Admin can delete from gallery bucket" ON storage.objects
+  FOR DELETE TO authenticated USING (bucket_id = 'gallery' AND is_admin());
+
+DROP POLICY IF EXISTS "Public can view guest-photos bucket" ON storage.objects;
+CREATE POLICY "Public can view guest-photos bucket" ON storage.objects
+  FOR SELECT USING (bucket_id = 'guest-photos');
+
+DROP POLICY IF EXISTS "Public can upload to guest-photos bucket" ON storage.objects;
+CREATE POLICY "Public can upload to guest-photos bucket" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'guest-photos');
+
+DROP POLICY IF EXISTS "Admin can delete from guest-photos bucket" ON storage.objects;
+CREATE POLICY "Admin can delete from guest-photos bucket" ON storage.objects
+  FOR DELETE TO authenticated USING (bucket_id = 'guest-photos' AND is_admin());

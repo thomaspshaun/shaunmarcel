@@ -4,6 +4,9 @@
   import VenueMap from '$lib/components/VenueMap.svelte';
   import Accommodations from '$lib/components/Accommodations.svelte';
   import RsvpForm from '$lib/components/RsvpForm.svelte';
+  import PhotoGallery from '$lib/components/PhotoGallery.svelte';
+  import Guestbook from '$lib/components/Guestbook.svelte';
+  import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
   import { site } from '$lib/site-config';
 </script>
 
@@ -21,3 +24,7 @@
 </div>
 
 <RsvpForm />
+
+<PhotoGallery />
+<Guestbook />
+<GuestPhotoUpload />

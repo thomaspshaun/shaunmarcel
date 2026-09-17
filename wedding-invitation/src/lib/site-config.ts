@@ -17,6 +17,8 @@ export const navLinks = [
   { href: "#hero", label: "Home" },
   { href: "#details", label: "Details" },
   { href: "#rsvp", label: "RSVP" },
+  { href: "#gallery", label: "Gallery" },
+  { href: "#guestbook", label: "Guestbook" },
 ];
 
 // TODO: replace placeholder times/venue/accommodation details once confirmed.

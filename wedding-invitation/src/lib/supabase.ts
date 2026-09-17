@@ -44,6 +44,32 @@ export interface RsvpRecord {
   } | null;
 }
 
+export interface GalleryPhoto {
+  id: string;
+  storage_path: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+  url: string;
+}
+
+export interface GuestPhoto {
+  id: string;
+  storage_path: string;
+  uploader_name: string | null;
+  caption: string | null;
+  approved: boolean;
+  created_at: string;
+  url: string;
+}
+
+export interface GuestbookComment {
+  id: string;
+  display_name: string;
+  message: string;
+  created_at: string;
+}
+
 export interface GuestLookupResult {
   id: string;
   first_name: string;
@@ -104,5 +130,126 @@ export async function submitRsvp(submission: RsvpSubmission): Promise<void> {
     throw new Error(
       result?.message ?? "We could not find that invitation code.",
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pre-wedding photo gallery (curated, admin-managed)
+// ---------------------------------------------------------------------------
+
+const GALLERY_BUCKET = "gallery";
+const GUEST_PHOTOS_BUCKET = "guest-photos";
+
+export async function fetchGalleryPhotos(): Promise<GalleryPhoto[]> {
+  const { data, error } = await supabase
+    .from("gallery_photos")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("fetchGalleryPhotos error", error);
+    throw new Error("Could not load the photo gallery.");
+  }
+
+  return (data ?? []).map((row) => ({
+    ...row,
+    url: supabase.storage.from(GALLERY_BUCKET).getPublicUrl(row.storage_path)
+      .data.publicUrl,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Digital guestbook / comment wall
+// ---------------------------------------------------------------------------
+
+export async function fetchGuestbookComments(): Promise<GuestbookComment[]> {
+  const { data, error } = await supabase
+    .from("comments")
+    .select("id, display_name, message, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchGuestbookComments error", error);
+    throw new Error("Could not load the guestbook.");
+  }
+
+  return data ?? [];
+}
+
+export async function postGuestbookComment(
+  displayName: string,
+  message: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("comments")
+    .insert({ display_name: displayName, message });
+
+  if (error) {
+    console.error("postGuestbookComment error", error);
+    throw new Error("Could not post your message. Please try again.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Post-wedding guest photo uploads
+// ---------------------------------------------------------------------------
+
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB per photo
+const ALLOWED_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+
+export async function fetchGuestPhotos(): Promise<GuestPhoto[]> {
+  const { data, error } = await supabase
+    .from("guest_photos")
+    .select("*")
+    .eq("approved", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchGuestPhotos error", error);
+    throw new Error("Could not load guest photos.");
+  }
+
+  return (data ?? []).map((row) => ({
+    ...row,
+    url: supabase.storage
+      .from(GUEST_PHOTOS_BUCKET)
+      .getPublicUrl(row.storage_path).data.publicUrl,
+  }));
+}
+
+export async function uploadGuestPhoto(
+  file: File,
+  uploaderName: string,
+  caption: string,
+): Promise<void> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("That photo is larger than 8MB. Please choose a smaller file.");
+  }
+  if (ALLOWED_UPLOAD_TYPES.length && file.type && !ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+    throw new Error("Please upload a JPG, PNG, WEBP, or HEIC photo.");
+  }
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(GUEST_PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined });
+
+  if (uploadError) {
+    console.error("uploadGuestPhoto storage error", uploadError);
+    throw new Error("Could not upload your photo. Please try again.");
+  }
+
+  const { error: insertError } = await supabase.from("guest_photos").insert({
+    storage_path: path,
+    uploader_name: uploaderName || null,
+    caption: caption || null,
+  });
+
+  if (insertError) {
+    console.error("uploadGuestPhoto insert error", insertError);
+    throw new Error("Your photo uploaded but could not be saved. Please try again.");
   }
 }
