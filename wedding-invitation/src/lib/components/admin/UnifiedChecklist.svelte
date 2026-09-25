@@ -1,28 +1,38 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { supabase } from '$lib/supabase';
-
-  interface ChecklistItem {
-    id: string;
-    title: string;
-    completed: boolean;
-    sort_order: number;
-  }
+  import {
+    getOrCreateGroupBySlug,
+    fetchItems,
+    addItem,
+    toggleItem,
+    editItem,
+    deleteItem,
+    reorderItems,
+    type ChecklistItem
+  } from '$lib/checklists';
 
   interface Props {
-    tableName: string;
-    title: string;
+    // Either provide groupId directly (dynamic groups), or slug+name+category (fixed groups, auto-created)
+    groupId?: string;
+    slug?: string;
+    name?: string;
+    category?: string;
     subtitle?: string;
     placeholder?: string;
+    compact?: boolean;
   }
 
   let {
-    tableName,
-    title,
+    groupId,
+    slug,
+    name = '',
+    category = 'general',
     subtitle = 'Check off tasks as you complete them',
-    placeholder = 'Add new task...'
+    placeholder = 'Add new task...',
+    compact = false
   }: Props = $props();
 
+  let resolvedGroupId: string | null = $state(groupId ?? null);
   let items: ChecklistItem[] = $state([]);
   let loading = $state(true);
   let saving = $state(false);
@@ -35,13 +45,12 @@
     loading = true;
     loadError = '';
     try {
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .order('sort_order', { ascending: true });
-
-      if (error) throw new Error(`Could not load ${title.toLowerCase()}`);
-      items = data || [];
+      if (!resolvedGroupId) {
+        if (!slug) throw new Error('Missing checklist reference');
+        const group = await getOrCreateGroupBySlug(slug, name, category);
+        resolvedGroupId = group.id;
+      }
+      items = await fetchItems(resolvedGroupId);
     } catch (err) {
       loadError = err instanceof Error ? err.message : 'Could not load checklist';
       items = [];
@@ -52,25 +61,13 @@
 
   onMount(load);
 
-  async function addItem() {
-    if (!newItemTitle.trim()) return;
-
+  async function handleAdd() {
+    if (!newItemTitle.trim() || !resolvedGroupId) return;
     saving = true;
     saveError = '';
     try {
-      const { data, error } = await supabase
-        .from(tableName)
-        .insert({
-          title: newItemTitle.trim(),
-          completed: false,
-          sort_order: items.length
-        })
-        .select('*')
-        .single();
-
-      if (error || !data) throw new Error('Could not add item');
-
-      items = [...items, data];
+      const created = await addItem(resolvedGroupId, newItemTitle.trim(), items.length);
+      items = [...items, created];
       newItemTitle = '';
     } catch (err) {
       saveError = err instanceof Error ? err.message : 'Could not add item';
@@ -79,15 +76,9 @@
     }
   }
 
-  async function toggleItem(item: ChecklistItem) {
+  async function handleToggle(item: ChecklistItem) {
     try {
-      const { error } = await supabase
-        .from(tableName)
-        .update({ completed: !item.completed })
-        .eq('id', item.id);
-
-      if (error) throw new Error('Could not update item');
-
+      await toggleItem(item.id, !item.completed);
       item.completed = !item.completed;
       items = items;
     } catch (err) {
@@ -95,34 +86,20 @@
     }
   }
 
-  async function deleteItem(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Delete this item?')) return;
-
     try {
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('id', id);
-
-      if (error) throw new Error('Could not delete item');
-
+      await deleteItem(id);
       items = items.filter((i) => i.id !== id);
     } catch (err) {
       saveError = err instanceof Error ? err.message : 'Could not delete item';
     }
   }
 
-  async function editItem(item: ChecklistItem, newTitle: string) {
-    if (!newTitle.trim()) return;
-
+  async function handleEdit(item: ChecklistItem, newTitle: string) {
+    if (!newTitle.trim() || newTitle.trim() === item.title) return;
     try {
-      const { error } = await supabase
-        .from(tableName)
-        .update({ title: newTitle.trim() })
-        .eq('id', item.id);
-
-      if (error) throw new Error('Could not update item');
-
+      await editItem(item.id, newTitle.trim());
       item.title = newTitle.trim();
       items = items;
     } catch (err) {
@@ -148,37 +125,28 @@
     const copy = [...items];
     const [moved] = copy.splice(from, 1);
     copy.splice(targetIndex, 0, moved);
-
     items = copy;
 
     try {
-      const updates = items.map((item, idx) =>
-        supabase
-          .from(tableName)
-          .update({ sort_order: idx })
-          .eq('id', item.id)
-      );
-      await Promise.all(updates);
-    } catch (err) {
+      await reorderItems(items.map((item, idx) => ({ id: item.id, sort_order: idx })));
+    } catch {
       saveError = 'Could not reorder items';
     }
   }
+
+  const completedCount = $derived(items.filter((i) => i.completed).length);
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-  <!-- Header -->
-  <div class="bg-gradient-to-r from-rose-50 to-transparent px-6 py-5 border-b border-slate-200">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h3 class="text-2xl font-bold text-slate-900">{title}</h3>
-        {#if subtitle}
-          <p class="text-sm text-slate-600 mt-1">{subtitle}</p>
-        {/if}
-      </div>
+  {#if !compact}
+    <div class="bg-gradient-to-r from-rose-50 to-transparent px-6 py-5 border-b border-slate-200">
+      <h3 class="text-2xl font-bold text-slate-900">{name}</h3>
+      {#if subtitle}
+        <p class="text-sm text-slate-600 mt-1">{subtitle}</p>
+      {/if}
     </div>
-  </div>
+  {/if}
 
-  <!-- Messages -->
   {#if loadError}
     <div class="bg-amber-50 border-b border-amber-200 px-6 py-3">
       <p class="text-sm text-amber-800">{loadError}</p>
@@ -190,16 +158,14 @@
     </div>
   {/if}
 
-  <!-- Content -->
   <div class="p-6">
     {#if loading}
       <p class="text-slate-500">Loading checklist...</p>
     {:else}
-      <!-- Add Item Form -->
       <form
         onsubmit={(e) => {
           e.preventDefault();
-          addItem();
+          handleAdd();
         }}
         class="mb-6 flex gap-2"
       >
@@ -218,7 +184,6 @@
         </button>
       </form>
 
-      <!-- Checklist Items -->
       {#if items.length === 0}
         <div class="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
           <p class="text-slate-600 font-medium mb-2">No items yet</p>
@@ -234,36 +199,29 @@
               ondragover={handleDragOver}
               ondrop={(e) => handleDrop(e, idx)}
             >
-              <!-- Drag Handle -->
-              <span
-                class="cursor-grab select-none text-slate-300 group-hover:text-slate-400 shrink-0"
-                title="Drag to reorder"
-              >
+              <span class="cursor-grab select-none text-slate-300 group-hover:text-slate-400 shrink-0" title="Drag to reorder">
                 ⠿
               </span>
 
-              <!-- Checkbox -->
               <input
                 type="checkbox"
                 checked={item.completed}
-                onchange={() => toggleItem(item)}
+                onchange={() => handleToggle(item)}
                 class="w-5 h-5 rounded border-slate-300 text-rose-500 focus:ring-rose-400 cursor-pointer shrink-0"
               />
 
-              <!-- Task Title -->
               <input
                 type="text"
                 value={item.title}
-                onblur={(e) => editItem(item, e.currentTarget.value)}
+                onblur={(e) => handleEdit(item, e.currentTarget.value)}
                 class="flex-1 rounded-md border border-slate-200 px-3 py-1 text-sm {item.completed
                   ? 'line-through text-slate-400 bg-slate-50'
                   : 'text-slate-900'} focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
               />
 
-              <!-- Delete Button -->
               <button
                 type="button"
-                onclick={() => deleteItem(item.id)}
+                onclick={() => handleDelete(item.id)}
                 class="text-slate-300 hover:text-red-500 transition-colors shrink-0 font-semibold"
               >
                 ×
@@ -272,12 +230,10 @@
           {/each}
         </div>
 
-        <!-- Summary -->
         {#if items.length > 0}
-          {@const completed = items.filter((i) => i.completed).length}
           <div class="mt-4 pt-4 border-t border-slate-200">
             <p class="text-sm text-slate-600">
-              <span class="font-semibold text-rose-600">{completed}</span>
+              <span class="font-semibold text-rose-600">{completedCount}</span>
               of
               <span class="font-semibold">{items.length}</span>
               {items.length === 1 ? 'task' : 'tasks'} completed
@@ -285,7 +241,7 @@
             <div class="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
                 class="h-full bg-rose-500 rounded-full transition-all duration-300"
-                style="width: {(completed / items.length) * 100}%"
+                style="width: {(completedCount / items.length) * 100}%"
               ></div>
             </div>
           </div>
@@ -294,9 +250,3 @@
     {/if}
   </div>
 </div>
-
-<style>
-  input[type='checkbox'] {
-    cursor: pointer;
-  }
-</style>

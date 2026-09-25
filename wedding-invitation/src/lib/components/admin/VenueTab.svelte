@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fetchVenues, addVenue, updateVenue, deleteVenue, type PlannerVenue } from '$lib/planner-extras';
-  import GenericChecklist from './GenericChecklist.svelte';
+  import UnifiedChecklist from './UnifiedChecklist.svelte';
 
   interface VenueLocal extends PlannerVenue {
     saving?: boolean;
@@ -194,9 +194,10 @@
   {/if}
 
   <div>
-    <GenericChecklist
-      tableName="venue_checklist"
-      title="General Venue Checklist"
+    <UnifiedChecklist
+      slug="venue_general"
+      name="General Venue Checklist"
+      category="venue"
       subtitle="Track venue booking, setup, and coordination tasks"
       placeholder="Add a task..."
     />

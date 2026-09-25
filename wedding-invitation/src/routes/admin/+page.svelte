@@ -12,6 +12,7 @@
     import VenueTab from '$lib/components/admin/VenueTab.svelte';
     import EmergencyTab from '$lib/components/admin/EmergencyTab.svelte';
     import MediaTab from '$lib/components/admin/MediaTab.svelte';
+    import ChecklistsTab from '$lib/components/admin/ChecklistsTab.svelte';
 
   let session: Session | null = $state(null);
   let authLoading = $state(true);
@@ -30,7 +31,8 @@
     { id: 'vendors', label: 'Vendors' },
     { id: 'venue', label: 'Venue' },
     { id: 'emergency', label: 'Emergency & Quick Ref' },
-    { id: 'media', label: 'Media' }
+    { id: 'media', label: 'Media' },
+    { id: 'checklists', label: 'Checklists' }
   ] as const;
 
   let activeTab: (typeof tabs)[number]['id'] = $state('overview');
@@ -154,6 +156,8 @@
         <EmergencyTab />
       {:else if activeTab === 'media'}
         <MediaTab />
+      {:else if activeTab === 'checklists'}
+        <ChecklistsTab />
       {/if}
     </div>
   {/if}

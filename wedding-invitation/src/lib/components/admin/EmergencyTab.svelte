@@ -1,13 +1,14 @@
 <script lang="ts">
-  import GenericChecklist from './GenericChecklist.svelte';
+  import UnifiedChecklist from './UnifiedChecklist.svelte';
   import NotesFields from './NotesFields.svelte';
   import { emergencyContactFields, quickReferenceFields } from '$lib/planner-templates';
 </script>
 
 <div class="grid gap-6 lg:grid-cols-2">
-  <GenericChecklist
-    tableName="emergency_kit_checklist"
-    title="Wedding Emergency Kit"
+  <UnifiedChecklist
+    slug="emergency_kit"
+    name="Wedding Emergency Kit"
+    category="emergency"
     subtitle="Stock emergency supplies and pack essentials"
     placeholder="Add an item..."
   />

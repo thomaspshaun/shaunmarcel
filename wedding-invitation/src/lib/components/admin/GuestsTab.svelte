@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { supabase, type GuestRecord } from '$lib/supabase';
   import { buildWhatsappLink } from '$lib/utils/whatsapp';
-  import GenericChecklist from './GenericChecklist.svelte';
+  import UnifiedChecklist from './UnifiedChecklist.svelte';
 
   let guests: GuestRecord[] = $state([]);
   let guestsLoading = $state(false);
@@ -327,9 +327,10 @@
 
 <!-- Guest Communications Checklist -->
 <div class="mt-10">
- <GenericChecklist
-   tableName="guest_communications_checklist"
-   title="Guest Communications Checklist"
+ <UnifiedChecklist
+   slug="guest_communications"
+   name="Guest Communications Checklist"
+   category="guests"
    subtitle="Track invitations, confirmations, and follow-ups"
    placeholder="Add a task..."
  />

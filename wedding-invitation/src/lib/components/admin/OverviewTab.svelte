@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GenericChecklist from './GenericChecklist.svelte';
+  import UnifiedChecklist from './UnifiedChecklist.svelte';
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -36,9 +36,10 @@
 </div>
 
 <div class="mt-8">
-  <GenericChecklist
-    tableName="master_wedding_checklist"
-    title="Master Wedding Countdown Checklist"
+  <UnifiedChecklist
+    slug="master_wedding"
+    name="Master Wedding Countdown Checklist"
+    category="overview"
     subtitle="Track all planning tasks from engagement through departure"
     placeholder="Add a task..."
   />
