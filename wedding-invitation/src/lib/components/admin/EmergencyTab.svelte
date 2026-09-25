@@ -1,11 +1,16 @@
 <script lang="ts">
-  import ChecklistSection from './ChecklistSection.svelte';
+  import GenericChecklist from './GenericChecklist.svelte';
   import NotesFields from './NotesFields.svelte';
   import { emergencyContactFields, quickReferenceFields } from '$lib/planner-templates';
 </script>
 
 <div class="grid gap-6 lg:grid-cols-2">
-  <ChecklistSection section="emergency_kit" title="Wedding Emergency Kit" />
+  <GenericChecklist
+    tableName="emergency_kit_checklist"
+    title="Wedding Emergency Kit"
+    subtitle="Stock emergency supplies and pack essentials"
+    placeholder="Add an item..."
+  />
 
   <div class="space-y-6">
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

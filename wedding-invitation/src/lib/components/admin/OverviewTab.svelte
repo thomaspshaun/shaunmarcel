@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ChecklistSection from './ChecklistSection.svelte';
+  import GenericChecklist from './GenericChecklist.svelte';
 </script>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -36,15 +36,10 @@
 </div>
 
 <div class="mt-8">
-  <h2 class="text-lg font-medium text-slate-900">Master Wedding Countdown Checklist</h2>
-  <div class="mt-3">
-    <ChecklistSection section="master_checklist" />
-  </div>
-</div>
-
-<div class="mt-8">
-  <h2 class="text-lg font-medium text-slate-900">Guest Communications Checklist</h2>
-  <div class="mt-3">
-    <ChecklistSection section="guest_communications" />
-  </div>
+  <GenericChecklist
+    tableName="master_wedding_checklist"
+    title="Master Wedding Countdown Checklist"
+    subtitle="Track all planning tasks from engagement through departure"
+    placeholder="Add a task..."
+  />
 </div>
