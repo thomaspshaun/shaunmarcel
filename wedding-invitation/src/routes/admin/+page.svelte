@@ -9,8 +9,9 @@
   import ScheduleTab from '$lib/components/admin/ScheduleTab.svelte';
   import ReceptionTab from '$lib/components/admin/ReceptionTab.svelte';
   import VendorsTab from '$lib/components/admin/VendorsTab.svelte';
-  import EmergencyTab from '$lib/components/admin/EmergencyTab.svelte';
-  import MediaTab from '$lib/components/admin/MediaTab.svelte';
+    import VenueTab from '$lib/components/admin/VenueTab.svelte';
+    import EmergencyTab from '$lib/components/admin/EmergencyTab.svelte';
+    import MediaTab from '$lib/components/admin/MediaTab.svelte';
 
   let session: Session | null = $state(null);
   let authLoading = $state(true);
@@ -27,6 +28,7 @@
     { id: 'schedule', label: 'Weekend Schedule' },
     { id: 'reception', label: 'Reception & Seating' },
     { id: 'vendors', label: 'Vendors' },
+    { id: 'venue', label: 'Venue' },
     { id: 'emergency', label: 'Emergency & Quick Ref' },
     { id: 'media', label: 'Media' }
   ] as const;
@@ -146,6 +148,8 @@
         <ReceptionTab />
       {:else if activeTab === 'vendors'}
         <VendorsTab />
+      {:else if activeTab === 'venue'}
+        <VenueTab />
       {:else if activeTab === 'emergency'}
         <EmergencyTab />
       {:else if activeTab === 'media'}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import ChecklistSection from './ChecklistSection.svelte';
   import NotesFields from './NotesFields.svelte';
+  import ScheduleEditor from './ScheduleEditor.svelte';
   import { fridaySupperFields, sundayBreakfastFields } from '$lib/planner-templates';
 </script>
 
@@ -28,6 +29,12 @@
       <ChecklistSection section="saturday_morning" title="Morning" />
       <ChecklistSection section="saturday_afternoon" title="Afternoon — Drinks, Ceremony & Cocktail Hour" />
     </div>
+
+    <div class="mt-6">
+      <!-- Editable run sheet with drag-and-drop and save -->
+      <ScheduleEditor />
+    </div>
+
     <div class="mt-4">
       <ChecklistSection section="saturday_reception" title="Reception — Seating Through Evening Celebration" />
     </div>
