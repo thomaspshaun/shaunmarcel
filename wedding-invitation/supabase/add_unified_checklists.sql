@@ -3,6 +3,10 @@
 --           venue_checklist, ceremony_checklist, emergency_kit_checklist
 -- Adds: ability to create checklist blocks linked to wedding schedule items
 -- Run this in Supabase -> SQL Editor
+--
+-- Safe to run whether or not the old per-checklist tables exist:
+-- migration steps use dynamic SQL guarded by to_regclass() checks, so a
+-- missing old table is silently skipped instead of raising an error.
 
 -- ============================================================
 -- 1. Core tables
@@ -45,77 +49,56 @@ CREATE POLICY "Admins can manage checklist items" ON public.checklist_items
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- ============================================================
--- 2. Migrate existing static checklist data (safe to re-run)
+-- 2. Seed the 5 fixed checklist groups (always safe, idempotent)
 -- ============================================================
 
--- Master Wedding Countdown Checklist
-INSERT INTO public.checklist_groups (slug, name, category, sort_order)
-VALUES ('master_wedding', 'Master Wedding Countdown Checklist', 'overview', 0)
+INSERT INTO public.checklist_groups (slug, name, category, sort_order) VALUES
+  ('master_wedding', 'Master Wedding Countdown Checklist', 'overview', 0),
+  ('guest_communications', 'Guest Communications Checklist', 'guests', 0),
+  ('venue_general', 'General Venue Checklist', 'venue', 0),
+  ('ceremony', 'Ceremony Checklist', 'ceremony', 0),
+  ('emergency_kit', 'Wedding Emergency Kit', 'emergency', 0)
 ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO public.checklist_items (group_id, title, completed, sort_order, created_at, updated_at)
-SELECT g.id, t.title, t.completed, t.sort_order, t.created_at, t.updated_at
-FROM public.master_wedding_checklist t
-JOIN public.checklist_groups g ON g.slug = 'master_wedding'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.checklist_items ci WHERE ci.group_id = g.id AND ci.title = t.title
-);
-
--- Guest Communications Checklist
-INSERT INTO public.checklist_groups (slug, name, category, sort_order)
-VALUES ('guest_communications', 'Guest Communications Checklist', 'guests', 0)
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO public.checklist_items (group_id, title, completed, sort_order, created_at, updated_at)
-SELECT g.id, t.title, t.completed, t.sort_order, t.created_at, t.updated_at
-FROM public.guest_communications_checklist t
-JOIN public.checklist_groups g ON g.slug = 'guest_communications'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.checklist_items ci WHERE ci.group_id = g.id AND ci.title = t.title
-);
-
--- General Venue Checklist
-INSERT INTO public.checklist_groups (slug, name, category, sort_order)
-VALUES ('venue_general', 'General Venue Checklist', 'venue', 0)
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO public.checklist_items (group_id, title, completed, sort_order, created_at, updated_at)
-SELECT g.id, t.title, t.completed, t.sort_order, t.created_at, t.updated_at
-FROM public.venue_checklist t
-JOIN public.checklist_groups g ON g.slug = 'venue_general'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.checklist_items ci WHERE ci.group_id = g.id AND ci.title = t.title
-);
-
--- Ceremony Checklist
-INSERT INTO public.checklist_groups (slug, name, category, sort_order)
-VALUES ('ceremony', 'Ceremony Checklist', 'ceremony', 0)
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO public.checklist_items (group_id, title, completed, sort_order, created_at, updated_at)
-SELECT g.id, t.title, t.completed, t.sort_order, t.created_at, t.updated_at
-FROM public.ceremony_checklist t
-JOIN public.checklist_groups g ON g.slug = 'ceremony'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.checklist_items ci WHERE ci.group_id = g.id AND ci.title = t.title
-);
-
--- Wedding Emergency Kit
-INSERT INTO public.checklist_groups (slug, name, category, sort_order)
-VALUES ('emergency_kit', 'Wedding Emergency Kit', 'emergency', 0)
-ON CONFLICT (slug) DO NOTHING;
-
-INSERT INTO public.checklist_items (group_id, title, completed, sort_order, created_at, updated_at)
-SELECT g.id, t.title, t.completed, t.sort_order, t.created_at, t.updated_at
-FROM public.emergency_kit_checklist t
-JOIN public.checklist_groups g ON g.slug = 'emergency_kit'
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.checklist_items ci WHERE ci.group_id = g.id AND ci.title = t.title
-);
 
 -- ============================================================
--- 3. Once you've confirmed the migration in the app, you can
---    drop the old standalone tables by uncommenting below:
+-- 3. Migrate data from old standalone tables, if they exist
+--    (skips silently if a given old table was never created)
+-- ============================================================
+
+DO $$
+DECLARE
+  mapping record;
+BEGIN
+  FOR mapping IN
+    SELECT * FROM (VALUES
+      ('public.master_wedding_checklist', 'master_wedding'),
+      ('public.guest_communications_checklist', 'guest_communications'),
+      ('public.venue_checklist', 'venue_general'),
+      ('public.ceremony_checklist', 'ceremony'),
+      ('public.emergency_kit_checklist', 'emergency_kit')
+    ) AS m(old_table, new_slug)
+  LOOP
+    IF to_regclass(mapping.old_table) IS NOT NULL THEN
+      EXECUTE format(
+        'INSERT INTO public.checklist_items (group_id, title, completed, sort_order, created_at, updated_at)
+         SELECT g.id, t.title, t.completed, t.sort_order, t.created_at, t.updated_at
+         FROM %s t
+         JOIN public.checklist_groups g ON g.slug = %L
+         WHERE NOT EXISTS (
+           SELECT 1 FROM public.checklist_items ci WHERE ci.group_id = g.id AND ci.title = t.title
+         )',
+        mapping.old_table, mapping.new_slug
+      );
+      RAISE NOTICE 'Migrated data from % into checklist group %', mapping.old_table, mapping.new_slug;
+    ELSE
+      RAISE NOTICE 'Skipped % (table does not exist)', mapping.old_table;
+    END IF;
+  END LOOP;
+END $$;
+
+-- ============================================================
+-- 4. Once you've confirmed the migration in the app, you can
+--    drop any old standalone tables that do exist:
 -- ============================================================
 -- DROP TABLE IF EXISTS public.master_wedding_checklist;
 -- DROP TABLE IF EXISTS public.guest_communications_checklist;
