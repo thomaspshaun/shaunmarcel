@@ -63,10 +63,16 @@ export async function deleteScheduleItem(id: string) {
 }
 
 export async function reorderScheduleItems(items: { id: string; sort_order: number }[]) {
-  // Batch update using upsert-style updates
-  const updates = items.map((i) => ({ id: i.id, sort_order: i.sort_order }));
-  const { error } = await supabase.from('planner_schedule').upsert(updates, { onConflict: 'id' });
-  if (error) throw new Error('Could not reorder schedule items');
+  // Batch update sort_order for existing items
+  const updates = items.map((item) =>
+    supabase
+      .from('planner_schedule')
+      .update({ sort_order: item.sort_order })
+      .eq('id', item.id)
+  );
+  const results = await Promise.all(updates);
+  const errors = results.filter((r) => r.error);
+  if (errors.length > 0) throw new Error('Could not reorder schedule items');
 }
 
 // -------------------- Venue CRUD --------------------
