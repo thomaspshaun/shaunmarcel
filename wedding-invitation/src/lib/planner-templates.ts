@@ -227,6 +227,31 @@ export const checklistTemplates: Record<string, ChecklistTemplateItem[]> = {
     { subsection: "Essentials", label: "Stain remover" },
     { subsection: "Essentials", label: "Extra makeup" },
   ],
+
+  venue_checklist: [
+    { subsection: "Booking & Contract", label: "Venue viewed in person" },
+    { subsection: "Booking & Contract", label: "Contract signed" },
+    { subsection: "Booking & Contract", label: "Deposit paid" },
+    { subsection: "Booking & Contract", label: "Final payment date confirmed" },
+    { subsection: "Booking & Contract", label: "Insurance / liability confirmed" },
+    { subsection: "Logistics", label: "Capacity confirmed for guest count" },
+    { subsection: "Logistics", label: "Floor plan / layout agreed" },
+    { subsection: "Logistics", label: "Ceremony & reception space confirmed" },
+    { subsection: "Logistics", label: "Parking arrangements confirmed" },
+    { subsection: "Logistics", label: "Wet-weather backup plan agreed" },
+    { subsection: "Logistics", label: "Load-in / load-out times confirmed" },
+    { subsection: "Catering & Bar", label: "In-house or outside catering confirmed" },
+    { subsection: "Catering & Bar", label: "Bar service / license confirmed" },
+    { subsection: "Catering & Bar", label: "Corkage policy confirmed" },
+    { subsection: "Technical", label: "Power supply sufficient for vendors" },
+    { subsection: "Technical", label: "Sound system / noise curfew confirmed" },
+    { subsection: "Technical", label: "Wifi / connectivity confirmed" },
+    { subsection: "On the Day", label: "Venue coordinator contact confirmed" },
+    { subsection: "On the Day", label: "Setup access time confirmed" },
+    { subsection: "On the Day", label: "Signage placed" },
+    { subsection: "On the Day", label: "Restrooms checked" },
+    { subsection: "On the Day", label: "Cleanup / breakdown plan confirmed" },
+  ],
 };
 
 // Default vendor roles offered when adding a new vendor.
