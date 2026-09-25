@@ -13,7 +13,8 @@
 
   interface ItemLocal {
     id: string | null;
-    start_ts: string;
+    start_time: string; // HH:MM format for time input
+    start_ts: string; // ISO for database
     title: string;
     notes: string;
     section: string;
@@ -30,6 +31,24 @@
     'Uncategorized'
   ];
 
+  const SECTION_COLORS: Record<string, string> = {
+    'Arrival Plan': 'from-blue-50 to-transparent',
+    'Saturday Morning': 'from-amber-50 to-transparent',
+    'Saturday Afternoon': 'from-rose-50 to-transparent',
+    'Saturday Evening': 'from-purple-50 to-transparent',
+    'Sunday Morning': 'from-green-50 to-transparent',
+    'Uncategorized': 'from-slate-50 to-transparent'
+  };
+
+  const SECTION_BADGE_COLORS: Record<string, string> = {
+    'Arrival Plan': 'bg-blue-100 text-blue-700',
+    'Saturday Morning': 'bg-amber-100 text-amber-700',
+    'Saturday Afternoon': 'bg-rose-100 text-rose-700',
+    'Saturday Evening': 'bg-purple-100 text-purple-700',
+    'Sunday Morning': 'bg-green-100 text-green-700',
+    'Uncategorized': 'bg-slate-100 text-slate-700'
+  };
+
   let items: ItemLocal[] = $state([]);
   let sections: ScheduleSection[] = $state([]);
   let expandedSections = $state<Record<string, boolean>>({});
@@ -40,21 +59,16 @@
   let saveError = $state('');
   let saveMessage = $state('');
 
-  function toLocalInputValue(iso: string): string {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  function timeStringToISO(timeStr: string, date: Date = new Date()): string {
+    if (!timeStr) return date.toISOString();
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    date.setHours(hours, minutes, 0, 0);
+    return date.toISOString();
   }
 
-  function fromLocalInputValue(local: string): string {
-    const d = new Date(local);
-    return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-  }
-
-  function formatTime(isoOrLocal: string): string {
+  function isoToTimeString(iso: string): string {
     try {
-      const d = new Date(isoOrLocal);
+      const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return '';
       const pad = (n: number) => String(n).padStart(2, '0');
       return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -70,7 +84,8 @@
       const data = await fetchSchedule();
       items = data.map((d: PlannerScheduleItem) => ({
         id: d.id,
-        start_ts: toLocalInputValue(d.start_ts),
+        start_ts: d.start_ts,
+        start_time: isoToTimeString(d.start_ts),
         title: d.title,
         notes: d.notes ?? '',
         section: d.section || 'Uncategorized',
@@ -138,7 +153,8 @@
   function addBlank(section: string) {
     const newItem: ItemLocal = {
       id: null,
-      start_ts: toLocalInputValue(new Date().toISOString()),
+      start_ts: new Date().toISOString(),
+      start_time: '14:00',
       title: 'New item',
       notes: '',
       section,
@@ -172,7 +188,7 @@
     saveMessage = '';
     try {
       for (const it of items) {
-        const isoStart = fromLocalInputValue(it.start_ts);
+        const isoStart = timeStringToISO(it.start_time);
         if (!it.id) {
           const created = await addScheduleItem(isoStart, it.title, it.notes, it.section, it.sort_order);
           it.id = created.id;
@@ -190,6 +206,10 @@
       }
       await reorderScheduleItems(items.filter((i) => i.id).map((i) => ({ id: i.id!, sort_order: i.sort_order })));
       saveMessage = 'Schedule saved.';
+      
+      // Auto-collapse all items after save for cleaner view
+      expandedItems = {};
+      
       await load();
     } catch (err) {
       saveError = err instanceof Error ? err.message : 'Could not save schedule.';
@@ -199,205 +219,220 @@
   }
 </script>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-    <div>
-      <h3 class="text-lg font-semibold text-slate-900">Wedding Schedule</h3>
-      <p class="text-sm text-slate-500 mt-1">Click items to edit, drag to reorder, then Save</p>
-    </div>
-    <div class="flex gap-2">
-      <div class="relative">
+<div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-slate-50 to-transparent px-6 py-5 border-b border-slate-200">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900">Wedding Schedule</h2>
+        <p class="text-sm text-slate-600 mt-1">Click items to edit, drag to reorder, Save to persist</p>
+      </div>
+      <div class="flex gap-2">
+        <div class="relative">
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            id="addBtn"
+          >
+            + Add Item
+          </button>
+          <div
+            class="absolute right-0 top-full mt-1 hidden w-52 rounded-lg border border-slate-200 bg-white shadow-lg z-10"
+            id="addMenu"
+          >
+            {#each SECTION_OPTIONS as section}
+              <button
+                type="button"
+                class="w-full px-4 py-2.5 text-left text-sm hover:bg-slate-100 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                onclick={() => {
+                  addBlank(section);
+                  document.getElementById('addMenu')?.classList.add('hidden');
+                }}
+              >
+                {section}
+              </button>
+            {/each}
+          </div>
+        </div>
         <button
           type="button"
-          class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
-          id="addBtn"
+          class="rounded-lg bg-rose-500 px-5 py-2 text-sm font-semibold text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+          onclick={saveAll}
+          disabled={saving}
         >
-          + Add Item
+          {saving ? 'Saving...' : 'Save'}
         </button>
-        <div
-          class="absolute right-0 top-full mt-1 hidden w-48 rounded-lg border border-slate-200 bg-white shadow-lg z-10"
-          id="addMenu"
-        >
-          {#each SECTION_OPTIONS as section}
-            <button
-              type="button"
-              class="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 first:rounded-t-lg last:rounded-b-lg"
-              onclick={() => {
-                addBlank(section);
-                document.getElementById('addMenu')?.classList.add('hidden');
-              }}
-            >
-              {section}
-            </button>
-          {/each}
-        </div>
       </div>
-      <button
-        type="button"
-        class="rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-        onclick={saveAll}
-        disabled={saving}
-      >
-        {saving ? 'Saving...' : 'Save Changes'}
-      </button>
     </div>
   </div>
 
+  <!-- Messages -->
   {#if loadError}
-    <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">{loadError}</p>
+    <div class="bg-amber-50 border-b border-amber-200 px-6 py-3">
+      <p class="text-sm text-amber-800">{loadError}</p>
+    </div>
   {/if}
   {#if saveError}
-    <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{saveError}</p>
+    <div class="bg-red-50 border-b border-red-200 px-6 py-3">
+      <p class="text-sm text-red-800">{saveError}</p>
+    </div>
   {/if}
   {#if saveMessage}
-    <p class="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">{saveMessage}</p>
+    <div class="bg-green-50 border-b border-green-200 px-6 py-3">
+      <p class="text-sm text-green-800">{saveMessage}</p>
+    </div>
   {/if}
 
-  {#if loading}
-    <p class="text-center text-sm text-slate-500 py-8">Loading schedule...</p>
-  {:else}
-    <div class="space-y-3">
-      {#each sections as section (section.name)}
-        <div class="border border-slate-200 rounded-lg overflow-hidden">
-          <button
-            type="button"
-            class="w-full flex items-center justify-between gap-3 bg-gradient-to-r from-rose-50 to-transparent px-4 py-3 text-left hover:bg-rose-100 transition-colors"
-            onclick={() => {
-              expandedSections[section.name] = !expandedSections[section.name];
-            }}
-          >
-            <div class="flex items-center gap-3 flex-1">
-              <span class="text-rose-400">{expandedSections[section.name] ? '▼' : '▶'}</span>
-              <span class="font-semibold text-slate-900">{section.name}</span>
-              <span class="inline-block bg-rose-100 text-rose-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                {section.items.length} {section.items.length === 1 ? 'item' : 'items'}
-              </span>
-            </div>
-          </button>
+  <!-- Content -->
+  <div class="p-6">
+    {#if loading}
+      <div class="text-center py-12">
+        <p class="text-slate-500">Loading schedule...</p>
+      </div>
+    {:else}
+      <div class="space-y-2">
+        {#each sections as section (section.name)}
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between gap-3 bg-gradient-to-r {SECTION_COLORS[section.name]} px-4 py-3 text-left hover:bg-opacity-50 transition-colors"
+              onclick={() => {
+                expandedSections[section.name] = !expandedSections[section.name];
+              }}
+            >
+              <div class="flex items-center gap-3 flex-1">
+                <span class="text-slate-400 text-lg">{expandedSections[section.name] ? '▼' : '▶'}</span>
+                <span class="font-bold text-slate-900">{section.name}</span>
+                <span class="inline-flex items-center gap-1 {SECTION_BADGE_COLORS[section.name]} text-xs font-semibold px-2.5 py-1 rounded-full ml-auto">
+                  {section.items.length}
+                </span>
+              </div>
+            </button>
 
-          {#if expandedSections[section.name]}
-            <div class="divide-y divide-slate-100 bg-slate-50">
-              {#if section.items.length === 0}
-                <div class="px-4 py-6 text-center text-sm text-slate-500">
-                  No items in this section. Click "+ Add Item" to get started.
-                </div>
-              {:else}
-                {#each section.items as item, sectionIdx (item.id ?? `${section.name}-${sectionIdx}`)}
-                  {@const globalIdx = items.indexOf(item)}
-                  {@const itemKey = item.id ?? `${section.name}-${sectionIdx}`}
-                  {@const isExpanded = expandedItems[itemKey]}
-                  <div
-                    class="border-l-4 border-rose-200 hover:bg-slate-100 transition-colors"
-                    draggable={true}
-                    ondragstart={(e) => handleDragStart(e, globalIdx)}
-                    ondragover={handleDragOver}
-                    ondrop={(e) => handleDrop(e, globalIdx)}
-                  >
-                    <!-- Summary View -->
-                    <button
-                      type="button"
-                      class="w-full text-left px-4 py-3 flex items-start justify-between gap-3 hover:bg-white"
-                      onclick={() => {
-                        expandedItems[itemKey] = !expandedItems[itemKey];
-                      }}
+            {#if expandedSections[section.name]}
+              <div class="divide-y divide-slate-100 bg-slate-50">
+                {#if section.items.length === 0}
+                  <div class="px-4 py-6 text-center text-sm text-slate-500">
+                    No items. Click "+ Add Item" to create one.
+                  </div>
+                {:else}
+                  {#each section.items as item, sectionIdx (item.id ?? `${section.name}-${sectionIdx}`)}
+                    {@const globalIdx = items.indexOf(item)}
+                    {@const itemKey = item.id ?? `${section.name}-${sectionIdx}`}
+                    {@const isExpanded = expandedItems[itemKey]}
+                    <div
+                      class="border-l-4 border-slate-300 hover:bg-white transition-colors"
+                      draggable={true}
+                      ondragstart={(e) => handleDragStart(e, globalIdx)}
+                      ondragover={handleDragOver}
+                      ondrop={(e) => handleDrop(e, globalIdx)}
                     >
-                      <div class="flex items-start gap-3 flex-1 min-w-0">
-                        <span class="mt-1 cursor-grab select-none text-slate-300 shrink-0" title="Drag to reorder">⠿</span>
-                        <div class="flex-1 min-w-0">
-                          <div class="flex items-baseline gap-2 flex-wrap">
-                            <span class="font-mono text-sm font-semibold text-rose-600">{formatTime(item.start_ts)}</span>
-                            <span class="font-medium text-slate-900">{item.title}</span>
+                      <!-- Summary -->
+                      <button
+                        type="button"
+                        class="w-full text-left px-4 py-3 flex items-start justify-between gap-3 group hover:bg-white"
+                        onclick={() => {
+                          expandedItems[itemKey] = !expandedItems[itemKey];
+                        }}
+                      >
+                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                          <span class="cursor-grab select-none text-slate-300 group-hover:text-slate-400 shrink-0 mt-0.5" title="Drag to reorder">⠿</span>
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-baseline gap-3 flex-wrap">
+                              <span class="font-mono font-bold text-base text-rose-600">{item.start_time}</span>
+                              <span class="font-semibold text-slate-900">{item.title}</span>
+                            </div>
+                            {#if item.notes}
+                              <p class="text-sm text-slate-600 mt-1 line-clamp-1">·  {item.notes}</p>
+                            {/if}
                           </div>
-                          {#if item.notes}
-                            <p class="text-xs text-slate-500 mt-1 line-clamp-1">{item.notes}</p>
-                          {/if}
                         </div>
-                      </div>
-                      <span class="text-slate-400 shrink-0 mt-1">{isExpanded ? '▼' : '▶'}</span>
-                    </button>
+                        <span class="text-slate-400 shrink-0 mt-0.5">{isExpanded ? '▼' : '▶'}</span>
+                      </button>
 
-                    <!-- Edit Form (Expandable) -->
-                    {#if isExpanded}
-                      <div class="bg-white px-4 py-3 border-t border-slate-100 space-y-3">
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <!-- Edit Form -->
+                      {#if isExpanded}
+                        <div class="bg-white px-4 py-4 border-t border-slate-100 space-y-3">
+                          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <label class="block text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">Time</label>
+                              <input
+                                type="time"
+                                bind:value={item.start_time}
+                                oninput={() => markDirty(globalIdx)}
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label class="block text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">Section</label>
+                              <select
+                                bind:value={item.section}
+                                oninput={() => markDirty(globalIdx)}
+                                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
+                              >
+                                {#each SECTION_OPTIONS as opt}
+                                  <option value={opt}>{opt}</option>
+                                {/each}
+                              </select>
+                            </div>
+                          </div>
                           <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Start Time</label>
+                            <label class="block text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">Title</label>
                             <input
-                              type="datetime-local"
-                              bind:value={item.start_ts}
+                              type="text"
+                              bind:value={item.title}
                               oninput={() => markDirty(globalIdx)}
-                              class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-rose-400 focus:outline-none"
+                              placeholder="e.g., Ceremony, Dinner Service, First Dance"
+                              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Section</label>
-                            <select
-                              bind:value={item.section}
+                            <label class="block text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">Notes & Details</label>
+                            <textarea
+                              bind:value={item.notes}
                               oninput={() => markDirty(globalIdx)}
-                              class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-rose-400 focus:outline-none"
+                              rows={2}
+                              placeholder="Location, instructions, or details..."
+                              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none resize-none"
+                            ></textarea>
+                          </div>
+                          <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              class="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+                              onclick={() => removeItem(globalIdx)}
                             >
-                              {#each SECTION_OPTIONS as opt}
-                                <option value={opt}>{opt}</option>
-                              {/each}
-                            </select>
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              class="text-sm font-medium text-slate-600 hover:text-slate-700 hover:underline"
+                              onclick={() => {
+                                expandedItems[itemKey] = false;
+                              }}
+                            >
+                              Collapse
+                            </button>
                           </div>
                         </div>
-                        <div>
-                          <label class="block text-xs font-medium text-slate-700 mb-1">Title</label>
-                          <input
-                            type="text"
-                            bind:value={item.title}
-                            oninput={() => markDirty(globalIdx)}
-                            placeholder="e.g. Ceremony"
-                            class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-rose-400 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label class="block text-xs font-medium text-slate-700 mb-1">Notes</label>
-                          <textarea
-                            bind:value={item.notes}
-                            oninput={() => markDirty(globalIdx)}
-                            rows={2}
-                            placeholder="Details, location, instructions..."
-                            class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-rose-400 focus:outline-none resize-none"
-                          ></textarea>
-                        </div>
-                        <div class="flex justify-end gap-2 pt-2">
-                          <button
-                            type="button"
-                            class="text-sm text-rose-600 hover:text-rose-700 hover:underline"
-                            onclick={() => removeItem(globalIdx)}
-                          >
-                            Delete
-                          </button>
-                          <button
-                            type="button"
-                            class="text-sm text-slate-600 hover:text-slate-700"
-                            onclick={() => {
-                              expandedItems[itemKey] = false;
-                            }}
-                          >
-                            Collapse
-                          </button>
-                        </div>
-                      </div>
-                    {/if}
-                  </div>
-                {/each}
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/each}
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/each}
 
-      {#if items.length === 0}
-        <div class="text-center py-12">
-          <p class="text-sm text-slate-500 mb-3">No schedule items yet</p>
-          <p class="text-xs text-slate-400">Click "+ Add Item" to build your wedding day timeline</p>
-        </div>
-      {/if}
-    </div>
-  {/if}
+        {#if items.length === 0}
+          <div class="text-center py-16 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+            <p class="text-slate-600 font-medium mb-2">No schedule items yet</p>
+            <p class="text-sm text-slate-500">Click "+ Add Item" to build your wedding timeline</p>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style>
