@@ -25,6 +25,12 @@ export interface GuestRecord {
   rsvp_status: string;
   dietary_notes: string | null;
   invite_sent_at: string | null;
+  accommodation_type: "estate" | "guesthouse" | "own" | null;
+  accommodation_name: string | null;
+  room_nights: number | null;
+  accommodation_confirmed: boolean;
+  friday_supper_status: "pending" | "attending" | "declining";
+  sunday_breakfast_status: "pending" | "attending" | "declining";
 }
 
 export interface RsvpRecord {

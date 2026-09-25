@@ -1,11 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { supabase, type GuestRecord, type RsvpRecord, type GalleryPhoto, type GuestPhoto } from '$lib/supabase';
-  import { buildWhatsappLink } from '$lib/utils/whatsapp';
+  import { supabase } from '$lib/supabase';
   import type { Session } from '@supabase/supabase-js';
 
-  const GALLERY_BUCKET = 'gallery';
-  const GUEST_PHOTOS_BUCKET = 'guest-photos';
+  import OverviewTab from '$lib/components/admin/OverviewTab.svelte';
+  import GuestsTab from '$lib/components/admin/GuestsTab.svelte';
+  import RsvpTab from '$lib/components/admin/RsvpTab.svelte';
+  import ScheduleTab from '$lib/components/admin/ScheduleTab.svelte';
+  import ReceptionTab from '$lib/components/admin/ReceptionTab.svelte';
+  import VendorsTab from '$lib/components/admin/VendorsTab.svelte';
+  import EmergencyTab from '$lib/components/admin/EmergencyTab.svelte';
+  import MediaTab from '$lib/components/admin/MediaTab.svelte';
 
   let session: Session | null = $state(null);
   let authLoading = $state(true);
@@ -15,77 +20,27 @@
   let authError = $state('');
   let signingIn = $state(false);
 
-  let guests: GuestRecord[] = $state([]);
-  let guestsLoading = $state(false);
-  let guestsError = $state('');
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'guests', label: 'Guests' },
+    { id: 'rsvps', label: 'RSVPs' },
+    { id: 'schedule', label: 'Weekend Schedule' },
+    { id: 'reception', label: 'Reception & Seating' },
+    { id: 'vendors', label: 'Vendors' },
+    { id: 'emergency', label: 'Emergency & Quick Ref' },
+    { id: 'media', label: 'Media' }
+  ] as const;
 
-  let rsvps: RsvpRecord[] = $state([]);
-  let rsvpsLoading = $state(false);
-  let rsvpsError = $state('');
-
-  // Curated gallery state
-  let galleryPhotos: GalleryPhoto[] = $state([]);
-  let galleryLoading = $state(false);
-  let galleryError = $state('');
-  let galleryCaption = $state('');
-  let galleryFiles: File[] = $state([]);
-  let galleryUploading = $state(false);
-  let galleryUploadError = $state('');
-
-  // Guest-uploaded photo moderation state
-  let allGuestPhotos: GuestPhoto[] = $state([]);
-  let guestPhotosLoading = $state(false);
-  let guestPhotosError = $state('');
-
-  // Add-guest form state
-  let newFirstName = $state('');
-  let newLastName = $state('');
-  let newWhatsapp = $state('');
-  let newGuestType = $state('standard');
-  let newPlusOneAllowed = $state(false);
-  let addingGuest = $state(false);
-  let addGuestError = $state('');
-
-  let summary = $derived.by(() => {
-    const totalInvited = guests.length;
-    const attending = rsvps.filter((r) => r.attending);
-    const declining = rsvps.filter((r) => !r.attending);
-    const responded = rsvps.length;
-    const pending = totalInvited - responded;
-    const totalAttendingGuests = attending.reduce((sum, r) => sum + (r.guest_count ?? 1), 0);
-    const withDietary = rsvps.filter((r) => r.dietary_requirements?.trim()).length;
-
-    return {
-      totalInvited,
-      responded,
-      pending: Math.max(pending, 0),
-      attendingCount: attending.length,
-      decliningCount: declining.length,
-      totalAttendingGuests,
-      withDietary
-    };
-  });
+  let activeTab: (typeof tabs)[number]['id'] = $state('overview');
 
   onMount(() => {
     supabase.auth.getSession().then(({ data }) => {
       session = data.session;
       authLoading = false;
-      if (session) {
-        loadGuests();
-        loadRsvps();
-        loadGalleryPhotos();
-        loadAllGuestPhotos();
-      }
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       session = newSession;
-      if (newSession) {
-        loadGuests();
-        loadRsvps();
-        loadGalleryPhotos();
-        loadAllGuestPhotos();
-      }
     });
 
     return () => sub.subscription.unsubscribe();
@@ -105,214 +60,15 @@
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    guests = [];
-    rsvps = [];
-    galleryPhotos = [];
-    allGuestPhotos = [];
-  }
-
-  async function loadGuests() {
-    guestsLoading = true;
-    guestsError = '';
-
-    const { data, error } = await supabase
-      .from('guests')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      guestsError = error.message;
-    } else {
-      guests = data as GuestRecord[];
-    }
-    guestsLoading = false;
-  }
-
-  async function loadRsvps() {
-    rsvpsLoading = true;
-    rsvpsError = '';
-
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*, guests(first_name, last_name, guest_type)')
-      .order('submitted_at', { ascending: false });
-
-    if (error) {
-      rsvpsError = error.message;
-    } else {
-      rsvps = data as unknown as RsvpRecord[];
-    }
-    rsvpsLoading = false;
-  }
-
-  function withPublicUrl<T extends { storage_path: string }>(
-    row: T,
-    bucket: string
-  ): T & { url: string } {
-    return { ...row, url: supabase.storage.from(bucket).getPublicUrl(row.storage_path).data.publicUrl };
-  }
-
-  async function loadGalleryPhotos() {
-    galleryLoading = true;
-    galleryError = '';
-
-    const { data, error } = await supabase
-      .from('gallery_photos')
-      .select('*')
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      galleryError = error.message;
-    } else {
-      galleryPhotos = (data ?? []).map((row) => withPublicUrl(row, GALLERY_BUCKET));
-    }
-    galleryLoading = false;
-  }
-
-  function handleGalleryFileChange(e: Event) {
-    const input = e.target as HTMLInputElement;
-    galleryFiles = input.files ? Array.from(input.files) : [];
-  }
-
-  async function handleGalleryUpload(e: Event) {
-    e.preventDefault();
-    if (galleryFiles.length === 0) return;
-
-    galleryUploading = true;
-    galleryUploadError = '';
-
-    try {
-      for (const file of galleryFiles) {
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const path = `${crypto.randomUUID()}.${ext}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from(GALLERY_BUCKET)
-          .upload(path, file, { contentType: file.type || undefined });
-        if (uploadError) throw uploadError;
-
-        const { error: insertError } = await supabase.from('gallery_photos').insert({
-          storage_path: path,
-          caption: galleryCaption.trim() || null,
-          sort_order: galleryPhotos.length
-        });
-        if (insertError) throw insertError;
-      }
-
-      galleryFiles = [];
-      galleryCaption = '';
-      const fileInput = document.getElementById('gallery-file-input') as HTMLInputElement | null;
-      if (fileInput) fileInput.value = '';
-      await loadGalleryPhotos();
-    } catch (err) {
-      galleryUploadError = err instanceof Error ? err.message : 'Upload failed.';
-    } finally {
-      galleryUploading = false;
-    }
-  }
-
-  async function deleteGalleryPhoto(photo: GalleryPhoto) {
-    if (!confirm('Remove this photo from the gallery?')) return;
-    await supabase.storage.from(GALLERY_BUCKET).remove([photo.storage_path]);
-    await supabase.from('gallery_photos').delete().eq('id', photo.id);
-    await loadGalleryPhotos();
-  }
-
-  async function loadAllGuestPhotos() {
-    guestPhotosLoading = true;
-    guestPhotosError = '';
-
-    const { data, error } = await supabase
-      .from('guest_photos')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      guestPhotosError = error.message;
-    } else {
-      allGuestPhotos = (data ?? []).map((row) => withPublicUrl(row, GUEST_PHOTOS_BUCKET));
-    }
-    guestPhotosLoading = false;
-  }
-
-  async function deleteGuestPhoto(photo: GuestPhoto) {
-    if (!confirm('Delete this guest photo?')) return;
-    await supabase.storage.from(GUEST_PHOTOS_BUCKET).remove([photo.storage_path]);
-    await supabase.from('guest_photos').delete().eq('id', photo.id);
-    await loadAllGuestPhotos();
-  }
-
-  async function toggleGuestPhotoApproved(photo: GuestPhoto) {
-    await supabase.from('guest_photos').update({ approved: !photo.approved }).eq('id', photo.id);
-    await loadAllGuestPhotos();
-  }
-
-  function generateGuestCode(): string {
-    // 8-char alphanumeric, uppercase — easy to type, hard to guess.
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let out = '';
-    for (let i = 0; i < 8; i++) {
-      out += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return out;
-  }
-
-  async function handleAddGuest(e: Event) {
-    e.preventDefault();
-    if (!newFirstName.trim() || !newLastName.trim()) return;
-
-    addingGuest = true;
-    addGuestError = '';
-
-    const { error } = await supabase.from('guests').insert({
-      first_name: newFirstName.trim(),
-      last_name: newLastName.trim(),
-      whatsapp_number: newWhatsapp.trim() || null,
-      guest_type: newGuestType,
-      plus_one_allowed: newPlusOneAllowed,
-      guest_code: generateGuestCode()
-    });
-
-    if (error) {
-      addGuestError = error.message;
-    } else {
-      newFirstName = '';
-      newLastName = '';
-      newWhatsapp = '';
-      newGuestType = 'standard';
-      newPlusOneAllowed = false;
-      await loadGuests();
-    }
-    addingGuest = false;
-  }
-
-  async function markInviteSent(guest: GuestRecord) {
-    await supabase
-      .from('guests')
-      .update({ invite_sent_at: new Date().toISOString() })
-      .eq('id', guest.id);
-    await loadGuests();
-  }
-
-  function rsvpBadgeClass(status: string): string {
-    switch (status) {
-      case 'attending':
-        return 'bg-green-100 text-green-700';
-      case 'declining':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-slate-100 text-slate-600';
-    }
   }
 </script>
 
 <svelte:head>
-  <title>Guest Admin</title>
+  <title>Wedding Planner Admin</title>
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<div class="mx-auto max-w-5xl px-6 py-16">
+<div class="mx-auto max-w-6xl px-6 py-16">
   {#if authLoading}
     <p class="text-center text-slate-500">Loading...</p>
   {:else if !session}
@@ -353,7 +109,7 @@
     </div>
   {:else}
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <h1 class="text-2xl font-medium text-slate-900">Guest Management</h1>
+      <h1 class="text-2xl font-medium text-slate-900">Wedding Planner</h1>
       <button
         type="button"
         onclick={handleSignOut}
@@ -363,333 +119,37 @@
       </button>
     </div>
 
-    <!-- RSVP summary -->
-    <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-slate-900">{summary.totalInvited}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Invited</p>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-slate-900">{summary.responded}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Responded</p>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-amber-600">{summary.pending}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Pending</p>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-green-600">{summary.attendingCount}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Attending RSVPs</p>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-rose-600">{summary.totalAttendingGuests}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Total Attending</p>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-slate-900">{summary.withDietary}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Needs</p>
-      </div>
-    </div>
-
-    <!-- Add guest -->
-    <div class="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-medium text-slate-900">Add a Guest</h2>
-      <form onsubmit={handleAddGuest} class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <input
-          type="text"
-          placeholder="First name"
-          bind:value={newFirstName}
-          required
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-        />
-        <input
-          type="text"
-          placeholder="Last name"
-          bind:value={newLastName}
-          required
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-        />
-        <input
-          type="text"
-          placeholder="WhatsApp number (e.g. 0821234567)"
-          bind:value={newWhatsapp}
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-        />
-        <select
-          bind:value={newGuestType}
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+    <div class="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+      {#each tabs as tab (tab.id)}
+        <button
+          type="button"
+          onclick={() => (activeTab = tab.id)}
+          class="rounded-full px-4 py-1.5 text-sm font-medium transition {activeTab === tab.id
+            ? 'bg-rose-500 text-white'
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
         >
-          <option value="standard">Standard</option>
-          <option value="vip">VIP</option>
-          <option value="family">Family</option>
-          <option value="wedding_party">Wedding Party</option>
-        </select>
-        <label class="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" bind:checked={newPlusOneAllowed} class="h-4 w-4 rounded border-slate-300" />
-          Plus-one allowed
-        </label>
-
-        <div class="sm:col-span-2 lg:col-span-5">
-          {#if addGuestError}
-            <p class="mb-2 text-sm text-red-600">{addGuestError}</p>
-          {/if}
-          <button
-            type="submit"
-            disabled={addingGuest}
-            class="rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {addingGuest ? 'Adding...' : 'Add Guest'}
-          </button>
-        </div>
-      </form>
+          {tab.label}
+        </button>
+      {/each}
     </div>
 
-    <!-- Guest list -->
     <div class="mt-8">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium text-slate-900">Guests ({guests.length})</h2>
-        <button
-          type="button"
-          onclick={loadGuests}
-          class="text-sm font-medium text-rose-600 hover:underline"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {#if guestsLoading}
-        <p class="mt-4 text-slate-500">Loading guests...</p>
-      {:else if guestsError}
-        <p class="mt-4 text-red-600">{guestsError}</p>
-      {:else if guests.length === 0}
-        <p class="mt-4 text-slate-500">No guests yet — add your first one above.</p>
-      {:else}
-        <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              <tr>
-                <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Code</th>
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3">RSVP</th>
-                <th class="px-4 py-3">Invite Sent</th>
-                <th class="px-4 py-3">WhatsApp</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              {#each guests as guest (guest.id)}
-                <tr>
-                  <td class="px-4 py-3 font-medium text-slate-900">
-                    {guest.first_name} {guest.last_name}
-                  </td>
-                  <td class="px-4 py-3 font-mono text-xs text-slate-600">{guest.guest_code}</td>
-                  <td class="px-4 py-3 text-slate-600 capitalize">{guest.guest_type.replace('_', ' ')}</td>
-                  <td class="px-4 py-3">
-                    <span class="rounded-full px-2.5 py-1 text-xs font-medium {rsvpBadgeClass(guest.rsvp_status)}">
-                      {guest.rsvp_status}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-xs text-slate-500">
-                    {guest.invite_sent_at ? new Date(guest.invite_sent_at).toLocaleDateString() : '—'}
-                  </td>
-                  <td class="px-4 py-3">
-                    {#if guest.whatsapp_number}
-                      <a
-                        href={buildWhatsappLink(guest.whatsapp_number, guest.first_name, guest.guest_code)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onclick={() => markInviteSent(guest)}
-                        class="inline-flex items-center gap-1.5 rounded-full bg-green-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-green-600"
-                      >
-                        Send WhatsApp
-                      </a>
-                    {:else}
-                      <span class="text-xs text-slate-400">No number</span>
-                    {/if}
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
-    </div>
-
-    <!-- RSVP responses -->
-    <div class="mt-10">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium text-slate-900">RSVP Responses ({rsvps.length})</h2>
-        <button
-          type="button"
-          onclick={loadRsvps}
-          class="text-sm font-medium text-rose-600 hover:underline"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {#if rsvpsLoading}
-        <p class="mt-4 text-slate-500">Loading responses...</p>
-      {:else if rsvpsError}
-        <p class="mt-4 text-red-600">{rsvpsError}</p>
-      {:else if rsvps.length === 0}
-        <p class="mt-4 text-slate-500">No RSVPs yet.</p>
-      {:else}
-        <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              <tr>
-                <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Response</th>
-                <th class="px-4 py-3">Guests</th>
-                <th class="px-4 py-3">Plus One</th>
-                <th class="px-4 py-3">Dietary</th>
-                <th class="px-4 py-3">Song Request</th>
-                <th class="px-4 py-3">Notes</th>
-                <th class="px-4 py-3">Submitted</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              {#each rsvps as rsvp (rsvp.id)}
-                <tr>
-                  <td class="px-4 py-3 font-medium whitespace-nowrap text-slate-900">
-                    {rsvp.guests ? `${rsvp.guests.first_name} ${rsvp.guests.last_name}` : 'Unknown guest'}
-                  </td>
-                  <td class="px-4 py-3">
-                    <span
-                      class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.attending
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'}"
-                    >
-                      {rsvp.attending ? 'Attending' : 'Declined'}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-slate-600">{rsvp.attending ? rsvp.guest_count : '—'}</td>
-                  <td class="px-4 py-3 text-slate-600">{rsvp.plus_one_name || '—'}</td>
-                  <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.dietary_requirements || '—'}</td>
-                  <td class="px-4 py-3 max-w-[12rem] text-slate-600">{rsvp.song_request || '—'}</td>
-                  <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.notes || '—'}</td>
-                  <td class="px-4 py-3 text-xs whitespace-nowrap text-slate-500">
-                    {new Date(rsvp.submitted_at).toLocaleString()}
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
-    </div>
-
-    <!-- Curated gallery management -->
-    <div class="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-medium text-slate-900">Photo Gallery</h2>
-      <p class="mt-1 text-sm text-slate-500">
-        Upload the curated pre-wedding photos shown on the public gallery section.
-      </p>
-
-      <form onsubmit={handleGalleryUpload} class="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
-        <input
-          id="gallery-file-input"
-          type="file"
-          accept="image/*"
-          multiple
-          onchange={handleGalleryFileChange}
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 file:mr-3 file:rounded-full file:border-0 file:bg-rose-50 file:px-4 file:py-1.5 file:text-sm file:font-medium file:text-rose-600 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-        />
-        <input
-          type="text"
-          placeholder="Caption (optional, applies to this batch)"
-          bind:value={galleryCaption}
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={galleryUploading}
-          class="rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {galleryUploading ? 'Uploading...' : 'Upload'}
-        </button>
-      </form>
-      {#if galleryUploadError}
-        <p class="mt-2 text-sm text-red-600">{galleryUploadError}</p>
-      {/if}
-
-      {#if galleryLoading}
-        <p class="mt-4 text-slate-500">Loading gallery...</p>
-      {:else if galleryError}
-        <p class="mt-4 text-red-600">{galleryError}</p>
-      {:else if galleryPhotos.length === 0}
-        <p class="mt-4 text-slate-500">No curated photos yet.</p>
-      {:else}
-        <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          {#each galleryPhotos as photo (photo.id)}
-            <div class="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-              <img src={photo.url} alt={photo.caption ?? ''} class="h-full w-full object-cover" />
-              <button
-                type="button"
-                onclick={() => deleteGalleryPhoto(photo)}
-                class="absolute top-1.5 right-1.5 rounded-full bg-black/60 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100"
-              >
-                Remove
-              </button>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-
-    <!-- Guest photo moderation -->
-    <div class="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium text-slate-900">Guest Photo Uploads ({allGuestPhotos.length})</h2>
-        <button
-          type="button"
-          onclick={loadAllGuestPhotos}
-          class="text-sm font-medium text-rose-600 hover:underline"
-        >
-          Refresh
-        </button>
-      </div>
-      <p class="mt-1 text-sm text-slate-500">
-        Photos guests uploaded after the wedding. Hide or delete any that shouldn't be public.
-      </p>
-
-      {#if guestPhotosLoading}
-        <p class="mt-4 text-slate-500">Loading guest photos...</p>
-      {:else if guestPhotosError}
-        <p class="mt-4 text-red-600">{guestPhotosError}</p>
-      {:else if allGuestPhotos.length === 0}
-        <p class="mt-4 text-slate-500">No guest uploads yet.</p>
-      {:else}
-        <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-          {#each allGuestPhotos as photo (photo.id)}
-            <div class="group relative aspect-square overflow-hidden rounded-xl bg-slate-100">
-              <img
-                src={photo.url}
-                alt={photo.caption ?? ''}
-                class="h-full w-full object-cover {photo.approved ? '' : 'opacity-40'}"
-              />
-              <div
-                class="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-black/50 p-1 opacity-0 transition group-hover:opacity-100"
-              >
-                <button
-                  type="button"
-                  onclick={() => toggleGuestPhotoApproved(photo)}
-                  class="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-700"
-                >
-                  {photo.approved ? 'Hide' : 'Show'}
-                </button>
-                <button
-                  type="button"
-                  onclick={() => deleteGuestPhoto(photo)}
-                  class="rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-medium text-white"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
+      {#if activeTab === 'overview'}
+        <OverviewTab />
+      {:else if activeTab === 'guests'}
+        <GuestsTab />
+      {:else if activeTab === 'rsvps'}
+        <RsvpTab />
+      {:else if activeTab === 'schedule'}
+        <ScheduleTab />
+      {:else if activeTab === 'reception'}
+        <ReceptionTab />
+      {:else if activeTab === 'vendors'}
+        <VendorsTab />
+      {:else if activeTab === 'emergency'}
+        <EmergencyTab />
+      {:else if activeTab === 'media'}
+        <MediaTab />
       {/if}
     </div>
   {/if}

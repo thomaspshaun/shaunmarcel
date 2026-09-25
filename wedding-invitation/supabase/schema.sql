@@ -19,6 +19,16 @@ CREATE TABLE IF NOT EXISTS guests (
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS invite_sent_at TIMESTAMPTZ;
 
+-- Wedding weekend planner: accommodation tracking + attendance for the
+-- Friday welcome supper and Sunday farewell breakfast (separate from the
+-- main Saturday wedding RSVP in the `rsvps` table).
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_type TEXT CHECK (accommodation_type IN ('estate', 'guesthouse', 'own'));
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_name TEXT;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS room_nights INTEGER;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_confirmed BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS friday_supper_status TEXT NOT NULL DEFAULT 'pending' CHECK (friday_supper_status IN ('pending', 'attending', 'declining'));
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));
+
 CREATE TABLE IF NOT EXISTS rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   guest_id UUID NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
@@ -76,12 +86,82 @@ CREATE TABLE IF NOT EXISTS guest_photos (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ---------------------------------------------------------------------------
+-- Wedding weekend planner (admin-only operational planning tool)
+-- ---------------------------------------------------------------------------
+-- Generic checklist rows, grouped by `section` (e.g. 'master_checklist',
+-- 'friday_arrival') and optionally `subsection` (e.g. '12 Months Before').
+-- The admin UI auto-seeds default items per section from a template in code
+-- the first time a section is opened with no rows yet.
+CREATE TABLE IF NOT EXISTS planner_checklist_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  section TEXT NOT NULL,
+  subsection TEXT,
+  label TEXT NOT NULL,
+  checked BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Vendor tracker (photographer, DJ, florist, etc.).
+CREATE TABLE IF NOT EXISTS planner_vendors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  role TEXT NOT NULL,
+  name TEXT,
+  contact_name TEXT,
+  phone TEXT,
+  email TEXT,
+  cost TEXT,
+  notes TEXT,
+  contract_signed BOOLEAN NOT NULL DEFAULT false,
+  deposit_paid BOOLEAN NOT NULL DEFAULT false,
+  final_payment_scheduled BOOLEAN NOT NULL DEFAULT false,
+  arrival_confirmed BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS planner_vendor_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id UUID NOT NULL REFERENCES planner_vendors(id) ON DELETE CASCADE,
+  payment_date DATE,
+  amount NUMERIC,
+  paid BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Reception seating plan.
+CREATE TABLE IF NOT EXISTS planner_seating_tables (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS planner_seating_seats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_id UUID NOT NULL REFERENCES planner_seating_tables(id) ON DELETE CASCADE,
+  seat_label TEXT,
+  guest_name TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- Free-text key/value fields used across the planner (restaurant details,
+-- important contact numbers, quick-reference notes).
+CREATE TABLE IF NOT EXISTS planner_notes (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_guests_guest_code ON guests(guest_code);
 CREATE INDEX IF NOT EXISTS idx_rsvps_guest_id ON rsvps(guest_id);
 CREATE INDEX IF NOT EXISTS idx_comments_approved ON comments(approved, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
 CREATE INDEX IF NOT EXISTS idx_gallery_photos_sort ON gallery_photos(sort_order, created_at);
 CREATE INDEX IF NOT EXISTS idx_guest_photos_approved ON guest_photos(approved, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_planner_checklist_section ON planner_checklist_items(section, sort_order);
+CREATE INDEX IF NOT EXISTS idx_planner_vendor_payments_vendor ON planner_vendor_payments(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_planner_seating_seats_table ON planner_seating_seats(table_id, sort_order);
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security
@@ -97,6 +177,12 @@ ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gallery_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE guest_photos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planner_checklist_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planner_vendors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planner_vendor_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planner_seating_tables ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planner_seating_seats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE planner_notes ENABLE ROW LEVEL SECURITY;
 
 -- No direct table policies are created for guests/rsvps: all access goes
 -- through the RPC functions below, which run with the table owner's
@@ -283,6 +369,33 @@ CREATE POLICY "Admin can delete guests" ON guests
 DROP POLICY IF EXISTS "Admin can read rsvps" ON rsvps;
 CREATE POLICY "Admin can read rsvps" ON rsvps
   FOR SELECT TO authenticated USING (is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Wedding weekend planner: admin-only, full access on every planner table.
+-- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Admin can manage checklist items" ON planner_checklist_items;
+CREATE POLICY "Admin can manage checklist items" ON planner_checklist_items
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can manage vendors" ON planner_vendors;
+CREATE POLICY "Admin can manage vendors" ON planner_vendors
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can manage vendor payments" ON planner_vendor_payments;
+CREATE POLICY "Admin can manage vendor payments" ON planner_vendor_payments
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can manage seating tables" ON planner_seating_tables;
+CREATE POLICY "Admin can manage seating tables" ON planner_seating_tables
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can manage seating seats" ON planner_seating_seats;
+CREATE POLICY "Admin can manage seating seats" ON planner_seating_seats
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can manage planner notes" ON planner_notes;
+CREATE POLICY "Admin can manage planner notes" ON planner_notes
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 
 -- ---------------------------------------------------------------------------
 -- Storage buckets (photo gallery + guest uploads)
