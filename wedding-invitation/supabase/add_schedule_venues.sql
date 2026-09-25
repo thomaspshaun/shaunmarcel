@@ -29,14 +29,16 @@ CREATE INDEX IF NOT EXISTS idx_planner_venues_name ON planner_venues(name);
 
 -- RLS (requires is_admin() to be defined in your schema.sql)
 ALTER TABLE planner_schedule ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Admins can manage schedule" ON planner_schedule
+DROP POLICY IF EXISTS "Admins can manage schedule" ON planner_schedule;
+CREATE POLICY "Admins can manage schedule" ON planner_schedule
   FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
 ALTER TABLE planner_venues ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Admins can manage venues" ON planner_venues
+DROP POLICY IF EXISTS "Admins can manage venues" ON planner_venues;
+CREATE POLICY "Admins can manage venues" ON planner_venues
   FOR ALL
   TO authenticated
   USING (is_admin())
