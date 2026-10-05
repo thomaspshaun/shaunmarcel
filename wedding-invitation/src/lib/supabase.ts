@@ -213,6 +213,7 @@ const ALLOWED_UPLOAD_TYPES = [
   "image/png",
   "image/webp",
   "image/heic",
+  "image/heif",
 ];
 
 export async function fetchGuestPhotos(): Promise<GuestPhoto[]> {
@@ -262,7 +263,12 @@ export async function uploadGuestPhoto(
 
   if (uploadError) {
     console.error("uploadGuestPhoto storage error", uploadError);
-    throw new Error("Could not upload your photo. Please try again.");
+    const reason = /bucket not found/i.test(uploadError.message)
+      ? "the photo storage is not set up yet"
+      : /row-level security|policy|not authorized|unauthorized/i.test(uploadError.message)
+        ? "uploads are not permitted yet"
+        : uploadError.message;
+    throw new Error(`Could not upload your photo (${reason}). Please try again.`);
   }
 
   const { error: insertError } = await supabase.from("guest_photos").insert({
