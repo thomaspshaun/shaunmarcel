@@ -1,4 +1,4 @@
-// Central site configuration for copy that appears across multiple components/pages.
+﻿// Central site configuration for copy that appears across multiple components/pages.
 // Update this file as event details are confirmed.
 
 export const site = {
@@ -18,8 +18,13 @@ export const registry = {
   title: "Honeymoon Fund",
   description:
     "Your presence is the greatest gift. If you would like to contribute, you can help us create memories on our honeymoon.",
-  paymentUrl: "",
-  bankTransferReference: "Shaun & Marcel",
+  bankDetails: {
+    accountName: "ACCOUNT NAME TO BE CONFIRMED",
+    bankName: "BANK NAME TO BE CONFIRMED",
+    accountNumber: "ACCOUNT NUMBER TO BE CONFIRMED",
+    branchCode: "BRANCH CODE TO BE CONFIRMED",
+    reference: "Shaun & Marcel",
+  },
 };
 
 export const navLinks = [
@@ -45,7 +50,7 @@ export const scheduleEvents = [
     id: "cocktails",
     time: "4:00 PM",
     title: "Cocktail Hour",
-    description: "Drinks, canapés, and photos on the terrace.",
+    description: "Drinks, canapÃ©s, and photos on the terrace.",
     startIso: "2026-04-01T16:00:00+02:00",
     endIso: "2026-04-01T17:30:00+02:00",
   },
@@ -81,7 +86,7 @@ export const accommodations = [
     id: "venue-guesthouse",
     name: "On-site Guesthouse (TBC)",
     distance: "On the estate",
-    notes: "Limited rooms — book early. Booking code to follow.",
+    notes: "Limited rooms â€” book early. Booking code to follow.",
     bookingCode: "TBC",
     url: "https://www.google.com/maps/search/?api=1&query=Stellenbosch+guesthouse",
   },
@@ -102,3 +107,4 @@ export const accommodations = [
     url: "https://www.google.com/maps/search/?api=1&query=Stellenbosch+accommodation",
   },
 ];
+
