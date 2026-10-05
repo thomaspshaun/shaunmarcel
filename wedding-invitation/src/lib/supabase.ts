@@ -2,6 +2,7 @@
 // Only the public anon key is used here — all sensitive access is enforced
 // server-side via RLS + SECURITY DEFINER RPC functions (see supabase/schema.sql).
 import { createClient } from "@supabase/supabase-js";
+import { compressImage } from "$lib/utils/image";
 import {
   PUBLIC_SUPABASE_URL,
   PUBLIC_SUPABASE_ANON_KEY,
@@ -207,7 +208,8 @@ export async function postGuestbookComment(
 // Post-wedding guest photo uploads
 // ---------------------------------------------------------------------------
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB per photo
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB per photo (after compression)
+const MAX_ORIGINAL_BYTES = 30 * 1024 * 1024; // reject absurdly large originals
 const ALLOWED_UPLOAD_TYPES = [
   "image/jpeg",
   "image/png",
@@ -237,10 +239,14 @@ export async function fetchGuestPhotos(): Promise<GuestPhoto[]> {
 }
 
 export async function uploadGuestPhoto(
-  file: File,
+  original: File,
   uploaderName: string,
   caption: string,
 ): Promise<void> {
+  if (original.size > MAX_ORIGINAL_BYTES) {
+    throw new Error("That photo is too large. Please choose a smaller file.");
+  }
+  const file = await compressImage(original);
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(
       "That photo is larger than 8MB. Please choose a smaller file.",

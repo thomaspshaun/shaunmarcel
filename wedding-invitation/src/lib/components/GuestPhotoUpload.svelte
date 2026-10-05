@@ -79,8 +79,8 @@
       Guest Photos
     </h2>
     <p class="lede mx-auto mt-5 max-w-md">
-      Snapped a photo on the day? Upload it here so we can all enjoy it together. Max 8MB per
-      photo — JPG, PNG, WEBP, or HEIC.
+      Snapped a photo on the day? Upload it here so we can all enjoy it together. Photos are
+      resized automatically — JPG, PNG, WEBP, or HEIC.
     </p>
   </div>
 
