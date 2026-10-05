@@ -49,6 +49,11 @@
 
       guest = result;
       dietaryRequirements = result.dietary_notes ?? '';
+      // A partner added by the admin is the plus-one by default.
+      if (result.partner_first_name) {
+        guestCount = 2;
+        plusOneName = [result.partner_first_name, result.partner_last_name].filter(Boolean).join(' ');
+      }
       step = 'form';
     } catch (err) {
       lookupError = err instanceof Error ? err.message : 'Something went wrong. Please try again.';

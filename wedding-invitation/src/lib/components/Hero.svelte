@@ -9,18 +9,14 @@
 
   let guest = $derived($guestStore.guest);
 
-  let invitationText = $derived.by(() => {
-    if (!guest) return null;
-    let names = [guest.first_name];
-    
-    if (guest.partner_first_name && guest.partner_last_name) {
-      names.push(guest.partner_first_name + " " + guest.partner_last_name);
-    } else if (guest.plus_one_allowed && guest.plus_one_name) {
-      names.push(guest.plus_one_name);
-    }
-    
-    return names.join(" & ");
-  });
+  // "Nevesh & Tracey" when a partner was added by the admin, otherwise just "Nevesh".
+  let invitationText = $derived(
+    guest
+      ? guest.partner_first_name
+        ? `${guest.first_name} & ${guest.partner_first_name}`
+        : guest.first_name
+      : null
+  );
 </script>
 
 <section id="hero" class="px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">

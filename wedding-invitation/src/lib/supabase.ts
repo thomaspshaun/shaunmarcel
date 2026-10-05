@@ -23,6 +23,8 @@ export interface GuestRecord {
   guest_code: string;
   guest_type: string;
   plus_one_allowed: boolean;
+  partner_first_name: string | null;
+  partner_last_name: string | null;
   rsvp_status: string;
   dietary_notes: string | null;
   invite_sent_at: string | null;
@@ -83,7 +85,6 @@ export interface GuestLookupResult {
   last_name: string;
   guest_type: string;
   plus_one_allowed: boolean;
-  plus_one_name?: string | null;
   partner_first_name?: string | null;
   partner_last_name?: string | null;
   rsvp_status: string;

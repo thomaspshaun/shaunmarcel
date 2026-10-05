@@ -29,6 +29,11 @@ ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_confirmed BOOLEAN NOT 
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS friday_supper_status TEXT NOT NULL DEFAULT 'pending' CHECK (friday_supper_status IN ('pending', 'attending', 'declining'));
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));
 
+-- Partner (couple invitations): when a partner is set, the guest automatically
+-- gets a plus-one and the invitation greets "Guest & Partner".
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_first_name TEXT;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_last_name TEXT;
+
 CREATE TABLE IF NOT EXISTS rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   guest_id UUID NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
@@ -257,30 +262,13 @@ CREATE POLICY "Admin can delete guest photos" ON guest_photos
 -- ---------------------------------------------------------------------------
 -- RPC: find_guest_by_code
 -- ---------------------------------------------------------------------------
--- Looks up a single guest by their unique invite code. Returns only the
--- fields the RSVP form needs — never the full guest list.
-CREATE OR REPLACE FUNCTION find_guest_by_code(p_code TEXT)
-RETURNS TABLE (
-  id UUID,
-  first_name TEXT,
-  last_name TEXT,
-  guest_type TEXT,
-  plus_one_allowed BOOLEAN,
-  rsvp_status TEXT,
-  dietary_notes TEXT
-)
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT g.id, g.first_name, g.last_name, g.guest_type, g.plus_one_allowed, g.rsvp_status, g.dietary_notes
-  FROM guests g
-  WHERE g.guest_code = upper(trim(p_code))
-  LIMIT 1;
-$$;
 
-REVOKE ALL ON FUNCTION find_guest_by_code(TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;
+ param($t)
+ $t=Rep $t "ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));`n" ("ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));`n`n"+$rpc+"`n")
+ $s=$t.IndexOf("-- Looks up a single guest by their unique invite code.")
+ $e=$t.IndexOf("GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;")+"GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;".Length
+ $t.Substring(0,$s)+$fn+$t.Substring($e)
+
 
 -- ---------------------------------------------------------------------------
 -- RPC: submit_rsvp

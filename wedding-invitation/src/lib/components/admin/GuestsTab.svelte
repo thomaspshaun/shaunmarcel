@@ -11,6 +11,8 @@
   // Add-guest form state
   let newFirstName = $state('');
   let newLastName = $state('');
+  let newPartnerFirstName = $state('');
+  let newPartnerLastName = $state('');
   let newWhatsapp = $state('');
   let newGuestType = $state('standard');
   let newPlusOneAllowed = $state(false);
@@ -53,12 +55,16 @@
     addingGuest = true;
     addGuestError = '';
 
+    // A partner implies a plus-one; the invitation then reads "Guest & Partner".
+    const partnerFirst = newPartnerFirstName.trim();
     const { error } = await supabase.from('guests').insert({
       first_name: newFirstName.trim(),
       last_name: newLastName.trim(),
+      partner_first_name: partnerFirst || null,
+      partner_last_name: partnerFirst ? newPartnerLastName.trim() || null : null,
       whatsapp_number: newWhatsapp.trim() || null,
       guest_type: newGuestType,
-      plus_one_allowed: newPlusOneAllowed,
+      plus_one_allowed: newPlusOneAllowed || !!partnerFirst,
       guest_code: generateGuestCode()
     });
 
@@ -67,6 +73,8 @@
     } else {
       newFirstName = '';
       newLastName = '';
+      newPartnerFirstName = '';
+      newPartnerLastName = '';
       newWhatsapp = '';
       newGuestType = 'standard';
       newPlusOneAllowed = false;
@@ -86,6 +94,15 @@
     await supabase.from('guests').update(patch).eq('id', guest.id);
   }
 
+  async function updatePartner(guest: GuestRecord, first: string, last: string) {
+    const partnerFirst = first.trim() || null;
+    await updateGuestField(guest, {
+      partner_first_name: partnerFirst,
+      partner_last_name: partnerFirst ? last.trim() || null : null,
+      ...(partnerFirst ? { plus_one_allowed: true } : {})
+    });
+  }
+
   function rsvpBadgeClass(status: string): string {
     switch (status) {
       case 'attending':
@@ -101,7 +118,7 @@
 <!-- Add guest -->
 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
   <h2 class="text-lg font-medium text-slate-900">Add a Guest</h2>
-  <form onsubmit={handleAddGuest} class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+  <form onsubmit={handleAddGuest} class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <input
       type="text"
       placeholder="First name"
@@ -114,6 +131,19 @@
       placeholder="Last name"
       bind:value={newLastName}
       required
+      class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+    />
+    <input
+      type="text"
+      placeholder="Partner first name (optional)"
+      bind:value={newPartnerFirstName}
+      class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+    />
+    <input
+      type="text"
+      placeholder="Partner last name (optional)"
+      bind:value={newPartnerLastName}
+      disabled={!newPartnerFirstName.trim()}
       class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
     />
     <input
@@ -133,10 +163,10 @@
     </select>
     <label class="flex items-center gap-2 text-sm text-slate-700">
       <input type="checkbox" bind:checked={newPlusOneAllowed} class="h-4 w-4 rounded border-slate-300" />
-      Plus-one allowed
+      Plus-one allowed (automatic with a partner)
     </label>
 
-    <div class="sm:col-span-2 lg:col-span-5">
+    <div class="sm:col-span-2 lg:col-span-4">
       {#if addGuestError}
         <p class="mb-2 text-sm text-red-600">{addGuestError}</p>
       {/if}
@@ -172,6 +202,7 @@
         <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
           <tr>
             <th class="px-4 py-3">Name</th>
+            <th class="px-4 py-3">Partner</th>
             <th class="px-4 py-3">Code</th>
             <th class="px-4 py-3">Type</th>
             <th class="px-4 py-3">Wedding RSVP</th>
@@ -183,6 +214,25 @@
           {#each guests as guest (guest.id)}
             <tr>
               <td class="px-4 py-3 font-medium text-slate-900">{guest.first_name} {guest.last_name}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-1">
+                  <input
+                    type="text"
+                    placeholder="First"
+                    value={guest.partner_first_name ?? ''}
+                    onblur={(e) => updatePartner(guest, e.currentTarget.value, guest.partner_last_name ?? '')}
+                class="w-28 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-rose-400 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last"
+                    value={guest.partner_last_name ?? ''}
+                    disabled={!guest.partner_first_name}
+                    onblur={(e) => updatePartner(guest, guest.partner_first_name ?? '', e.currentTarget.value)}
+                class="w-28 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-rose-400 focus:outline-none"
+                  />
+                </div>
+              </td>
               <td class="px-4 py-3 font-mono text-xs text-slate-600">{guest.guest_code}</td>
               <td class="px-4 py-3 text-slate-600 capitalize">{guest.guest_type.replace('_', ' ')}</td>
               <td class="px-4 py-3">
