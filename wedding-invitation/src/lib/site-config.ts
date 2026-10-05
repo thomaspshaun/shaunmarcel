@@ -14,6 +14,7 @@ export const site = {
 };
 
 export const registry = {
+  yuppiechefUrl: "https://yuppiechef.com/yc9904838",
   title: "Honeymoon Fund",
   description:
     "Your presence is the greatest gift. If you would like to contribute, you can help us create memories on our honeymoon.",
@@ -154,4 +155,7 @@ export const additionalAccommodations = [
   { name: "Devon Valley Hotel", distance: "~20–22 min", price: "$$", url: "https://devonvalleyhotel.com" },
   { name: "Spier Hotel", distance: "~22–25 min", price: "$$", url: "https://www.spier.co.za" },
 ];
+
+
+
 
