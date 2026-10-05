@@ -1,11 +1,11 @@
-<script lang="ts">
+﻿<script lang="ts">
   import AddToCalendar from '$lib/components/AddToCalendar.svelte';
   import { scheduleEvents, venue } from '$lib/site-config';
   import type { CalendarEvent } from '$lib/utils/calendar';
 
   function toCalendarEvent(item: (typeof scheduleEvents)[number]): CalendarEvent {
     return {
-      title: `${item.title} — Shaun & Marcel's Wedding`,
+      title: `${item.title} â€” Shaun & Marcel's Wedding`,
       description: item.description,
       location: venue.address,
       start: new Date(item.startIso),
@@ -22,29 +22,29 @@
   };
 </script>
 
-<section id="schedule" class="mx-auto max-w-3xl px-6 py-20">
+<section id="schedule" class="mx-auto max-w-4xl px-6 py-28">
   <div class="text-center">
-    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500 sm:text-sm">
+    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-primary)] sm:text-sm">
       Wedding Day
     </p>
-    <h2 class="mt-4 text-3xl font-light tracking-tight text-slate-900 sm:text-4xl">Schedule</h2>
+    <h2 class="mt-4 font-display text-4xl font-medium tracking-tight text-[var(--color-text)] sm:text-5xl">Schedule</h2>
   </div>
 
   <div class="mt-8 flex justify-center">
     <AddToCalendar event={fullDayEvent} filename="wedding-day.ics" label="Add Full Day to Calendar" />
   </div>
 
-  <ol class="mt-12 space-y-8 border-l border-slate-200 pl-8">
+  <ol class="mt-12 space-y-8 border-l border-[var(--color-border)] pl-8 sm:pl-12">
     {#each scheduleEvents as item (item.id)}
       <li class="relative">
         <span
-          class="absolute top-1.5 -left-[calc(2rem+5px)] h-3 w-3 rounded-full border-2 border-white bg-rose-400 shadow"
+          class="absolute top-1.5 -left-[calc(2rem+5px)] h-3 w-3 rounded-full border-2 border-[var(--color-background)] bg-[var(--color-accent)]"
           aria-hidden="true"
         ></span>
 
-        <p class="text-xs font-semibold tracking-[0.2em] text-rose-500 uppercase">{item.time}</p>
-        <h3 class="mt-1 text-xl font-medium text-slate-900">{item.title}</h3>
-        <p class="mt-1 text-sm leading-6 text-slate-600 sm:text-base">{item.description}</p>
+        <p class="text-xs font-semibold tracking-[0.2em] text-[var(--color-primary)] uppercase">{item.time}</p>
+        <h3 class="mt-1 font-display text-2xl font-medium text-[var(--color-text)]">{item.title}</h3>
+        <p class="mt-1 text-sm leading-7 text-[var(--color-text-muted)] sm:text-base">{item.description}</p>
 
         <div class="mt-3">
           <AddToCalendar
@@ -57,3 +57,4 @@
     {/each}
   </ol>
 </section>
+

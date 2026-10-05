@@ -1,54 +1,30 @@
-<script lang="ts">
-  import CountdownTimer from '$lib/components/CountdownTimer.svelte';
-  import { site } from '$lib/site-config';
+﻿<script lang="ts">
+  import CountdownTimer from "$lib/components/CountdownTimer.svelte";
+  import { site } from "$lib/site-config";
 </script>
 
-<section
-  id="hero"
-  class="relative flex min-h-[calc(100svh-64px)] items-center justify-center overflow-hidden px-6 py-16 sm:py-20"
->
-  <!-- Soft decorative background accents -->
-  <div class="pointer-events-none absolute inset-0 -z-10">
-    <div
-      class="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,_rgba(251,113,133,0.18),_transparent_70%)] blur-2xl"
-    ></div>
-    <div
-      class="absolute top-1/3 -right-16 h-80 w-80 rounded-full bg-[radial-gradient(circle,_rgba(244,182,80,0.16),_transparent_70%)] blur-2xl"
-    ></div>
+<section id="hero" class="relative flex min-h-[calc(100svh-72px)] items-center justify-center overflow-hidden px-6 py-20 sm:py-28">
+  <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+    <div class="absolute inset-x-8 top-8 bottom-8 border border-[var(--color-border)]/70 sm:inset-x-16"></div>
+    <div class="absolute left-1/2 top-1/2 h-px w-20 -translate-x-1/2 bg-[var(--color-accent)]/70"></div>
   </div>
 
-  <div class="mx-auto w-full max-w-3xl text-center">
-    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500 sm:text-sm">
-      {site.tagline}
+  <div class="relative mx-auto w-full max-w-4xl text-center">
+    <p class="text-[0.65rem] font-semibold uppercase tracking-[0.38em] text-[var(--color-primary)] sm:text-xs">
+      Together with their families
     </p>
-
-    <h1
-      class="mt-6 text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.05] font-light tracking-tight text-slate-900"
-    >
-      {site.coupleNames}
+    <p class="font-script mt-8 text-4xl text-[var(--color-accent)] sm:text-5xl">Our Wedding</p>
+    <h1 class="font-display mt-3 text-[clamp(4rem,13vw,9rem)] leading-[0.82] font-medium tracking-[-0.04em] text-[var(--color-text)]">
+      Shaun <span class="text-[var(--color-accent)]">&</span> Marcel
     </h1>
-
-    <p class="mx-auto mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-      {site.weddingDateLabel} &middot; {site.venueName}
-    </p>
-
-    <div class="mt-10">
-      <CountdownTimer targetIso={site.countdownTargetIso} />
+    <div class="mx-auto mt-10 flex items-center justify-center gap-4 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--color-text-muted)] sm:text-xs">
+      <span>17 April 2027</span><span class="text-[var(--color-accent)]">·</span><span>Eikenhof Estate</span>
     </div>
-
-    <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
-      <a
-        href="#rsvp"
-        class="rounded-full bg-rose-500 px-7 py-3 text-sm font-medium text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
-      >
-        RSVP Now
-      </a>
-      <a
-        href="#details"
-        class="rounded-full border border-slate-300 px-7 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-      >
-        View Details
-      </a>
+    <p class="mt-3 text-xs uppercase tracking-[0.25em] text-[var(--color-text-muted)]">Cape Winelands · South Africa</p>
+    <div class="mx-auto mt-12 max-w-xs border-y border-[var(--color-border)] py-5"><CountdownTimer targetIso={site.countdownTargetIso} /></div>
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-5">
+      <a href="#rsvp" class="border border-[var(--color-primary)] bg-[var(--color-primary)] px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-surface)] transition hover:bg-[var(--color-primary-dark)]">RSVP</a>
+      <a href="#details" class="border border-[var(--color-border)] px-7 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text)] transition hover:border-[var(--color-primary)]">Our weekend</a>
       <slot name="action" />
     </div>
   </div>

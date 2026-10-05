@@ -1,26 +1,26 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { venue } from '$lib/site-config';
 
   const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(venue.mapEmbedQuery)}&output=embed`;
 </script>
 
-<section id="venue" class="mx-auto max-w-4xl px-6 py-20">
+<section id="venue" class="mx-auto max-w-5xl px-6 py-28">
   <div class="text-center">
-    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500 sm:text-sm">Location</p>
-    <h2 class="mt-4 text-3xl font-light tracking-tight text-slate-900 sm:text-4xl">{venue.name}</h2>
-    <p class="mt-3 text-base text-slate-600">{venue.address}</p>
+    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-primary)] sm:text-sm">Location</p>
+    <h2 class="mt-4 font-display text-4xl font-medium tracking-tight text-[var(--color-text)] sm:text-5xl">{venue.name}</h2>
+    <p class="mt-3 text-base text-[var(--color-text-muted)]">{venue.address}</p>
 
     <a
       href={venue.mapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      class="mt-6 inline-flex items-center gap-2 rounded-full bg-rose-500 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+      class="mt-6 inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-surface)] transition hover:bg-[var(--color-primary-dark)]"
     >
       Get Directions
     </a>
   </div>
 
-  <div class="mt-10 overflow-hidden rounded-3xl border border-slate-200 shadow-lg">
+  <div class="mt-10 overflow-hidden border-y border-[var(--color-border)] py-3">
     <iframe
       title="Venue map"
       src={embedSrc}
@@ -31,3 +31,4 @@
     ></iframe>
   </div>
 </section>
+
