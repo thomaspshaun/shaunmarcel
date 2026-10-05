@@ -1,5 +1,15 @@
 -- Run once in the Supabase SQL editor (safe to re-run).
 
+-- Accommodation + weekend attendance columns (used by the invitation lookup and
+-- the admin Accommodation table). No-ops if they already exist.
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_type TEXT CHECK (accommodation_type IN ('estate', 'guesthouse', 'own'));
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_name TEXT;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS room_nights INTEGER;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_confirmed BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS friday_supper_status TEXT NOT NULL DEFAULT 'pending' CHECK (friday_supper_status IN ('pending', 'attending', 'declining'));
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS invite_sent_at TIMESTAMPTZ;
 -- Partner (couple invitations): when a partner is set, the guest automatically
 -- gets a plus-one and the invitation greets "Guest & Partner".
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_first_name TEXT;
