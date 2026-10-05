@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import Hero from '$lib/components/Hero.svelte';
+  import Welcome from '$lib/components/Welcome.svelte';
   import Timeline from '$lib/components/Timeline.svelte';
   import VenueMap from '$lib/components/VenueMap.svelte';
   import Accommodations from '$lib/components/Accommodations.svelte';
@@ -12,43 +15,40 @@
   import Registry from '$lib/components/Registry.svelte';
   import { site } from '$lib/site-config';
   import { guestStore } from '$lib/guestStore';
-  import { onMount } from 'svelte';
+  import { findGuestByCode } from '$lib/supabase';
 
-  let guest = $derived($guestStore.guest);
-
-  // Auto-lookup guest from URL param on mount
-  onMount(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (code && !guest) {
-      // Trigger lookup via modal's findGuestByCode
-      // (handled in RsvpForm component as well, but we set it here for consistency)
+  // Personalised links look like /?code=AB12CD34
+  onMount(async () => {
+    const code = new URLSearchParams(window.location.search).get('code')?.trim().toUpperCase();
+    if (!code || get(guestStore).code === code) return;
+    try {
+      const result = await findGuestByCode(code);
+      if (result) guestStore.setGuest(result, code);
+    } catch {
+      // Invalid or unavailable code: fall back to the general invitation.
     }
   });
 </script>
 
 <svelte:head>
   <title>{site.coupleNames} — Wedding Invitation</title>
-  <meta name="description" content="{site.coupleNames}'s wedding invitation, RSVP, event schedule, and guest information." />
+  <meta name="description" content="{site.coupleNames}'s wedding invitation, RSVP, weekend programme and guest information." />
 </svelte:head>
 
 <GuestHeader />
 
 <Hero>
-  <slot name="action">
+  {#snippet action()}
     <GuestLookupModal />
-  </slot>
+  {/snippet}
 </Hero>
 
-<div id="details">
-  <Timeline />
-  <VenueMap />
-  <Accommodations />
-</div>
-
+<Welcome />
+<Timeline />
+<VenueMap />
+<Accommodations />
 <RsvpForm />
-
+<Registry />
 <PhotoGallery />
 <Guestbook />
 <GuestPhotoUpload />
-<Registry />

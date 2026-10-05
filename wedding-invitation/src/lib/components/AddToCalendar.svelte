@@ -31,23 +31,22 @@
   <button
     type="button"
     onclick={toggle}
-    class="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+    class="btn-ghost"
     aria-haspopup="true"
     aria-expanded={open}
   >
-    <span aria-hidden="true">📅</span>
     {label}
   </button>
 
   {#if open}
     <div
-      class="absolute z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-lg"
+      class="absolute left-1/2 z-20 mt-2 w-60 -translate-x-1/2 border border-line bg-surface text-left"
     >
       <a
         href={googleCalendarUrl(event)}
         target="_blank"
         rel="noopener noreferrer"
-        class="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-50"
+        class="block px-4 py-3.5 text-sm text-ink hover:bg-paper-2"
         onclick={close}
       >
         Google Calendar
@@ -55,14 +54,14 @@
       <button
         type="button"
         onclick={handleDownload}
-        class="block w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
+        class="block w-full px-4 py-3 text-left text-sm text-ink hover:bg-paper-2"
       >
         Apple Calendar (.ics)
       </button>
       <button
         type="button"
         onclick={handleDownload}
-        class="block w-full border-t border-slate-100 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
+        class="block w-full border-t border-line px-4 py-3 text-left text-sm text-ink hover:bg-paper-2"
       >
         Outlook (.ics)
       </button>

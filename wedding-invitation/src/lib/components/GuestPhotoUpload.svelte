@@ -72,13 +72,13 @@
 
 <section id="guest-photos" class="mx-auto max-w-5xl px-6 py-20">
   <div class="text-center">
-    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500 sm:text-sm">
+    <p class="eyebrow">
       Share the Memories
     </p>
-    <h2 class="mt-4 text-3xl font-light tracking-tight text-slate-900 sm:text-4xl">
+    <h2 class="heading mt-4">
       Guest Photos
     </h2>
-    <p class="mx-auto mt-3 max-w-xl text-base text-slate-600">
+    <p class="lede mx-auto mt-5 max-w-md">
       Snapped a photo on the day? Upload it here so we can all enjoy it together. Max 8MB per
       photo — JPG, PNG, WEBP, or HEIC.
     </p>
@@ -86,45 +86,45 @@
 
   <form
     onsubmit={handleUpload}
-    class="mx-auto mt-10 max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+    class="mx-auto mt-10 max-w-xl border border-line bg-surface p-6"
   >
     <label class="block text-sm">
-      <span class="font-medium text-slate-700">Your name (optional)</span>
+      <span class="font-medium text-ink">Your name (optional)</span>
       <input
         type="text"
         bind:value={uploaderName}
         maxlength="80"
-        class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
+        class="mt-1 w-full rounded-none border border-line px-3 py-2 text-sm focus:border-sage focus:outline-none"
       />
     </label>
 
     <label class="mt-4 block text-sm">
-      <span class="font-medium text-slate-700">Caption (optional)</span>
+      <span class="font-medium text-ink">Caption (optional)</span>
       <input
         type="text"
         bind:value={caption}
         maxlength="160"
-        class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
+        class="mt-1 w-full rounded-none border border-line px-3 py-2 text-sm focus:border-sage focus:outline-none"
       />
     </label>
 
     <label class="mt-4 block text-sm">
-      <span class="font-medium text-slate-700">Photo(s)</span>
+      <span class="font-medium text-ink">Photo(s)</span>
       <input
         id="guest-photo-input"
         type="file"
         accept="image/*"
         multiple
         onchange={handleFileChange}
-        class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-rose-50 file:px-4 file:py-1.5 file:text-sm file:font-medium file:text-rose-600 focus:border-rose-400 focus:ring-1 focus:ring-rose-400 focus:outline-none"
+        class="mt-1 w-full rounded-none border border-line px-3 py-2 text-sm file:mr-3 file:border-0 file:bg-paper-2 file:px-4 file:py-1.5 file:text-sm file:font-medium file:text-sage-dark focus:border-sage focus:outline-none"
       />
     </label>
 
     {#if uploadError}
-      <p class="mt-3 text-sm text-rose-500">{uploadError}</p>
+      <p class="mt-3 text-sm text-sage-dark">{uploadError}</p>
     {/if}
     {#if uploadedCount > 0 && !uploadError}
-      <p class="mt-3 text-sm text-emerald-600">
+      <p class="mt-3 text-sm text-sage-dark">
         Uploaded {uploadedCount} photo{uploadedCount === 1 ? "" : "s"} — thank you!
       </p>
     {/if}
@@ -132,25 +132,25 @@
     <button
       type="submit"
       disabled={uploading}
-      class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+      class="mt-5 btn w-full disabled:cursor-not-allowed disabled:opacity-60"
     >
       {uploading ? "Uploading…" : "Upload Photo(s)"}
     </button>
   </form>
 
   {#if loading}
-    <p class="mt-12 text-center text-sm text-slate-500">Loading guest photos…</p>
+    <p class="mt-12 text-center text-sm text-muted">Loading guest photos…</p>
   {:else if loadError}
-    <p class="mt-12 text-center text-sm text-rose-500">{loadError}</p>
+    <p class="mt-12 text-center text-sm text-sage-dark">{loadError}</p>
   {:else if photos.length === 0}
-    <p class="mt-12 text-center text-sm text-slate-500">No guest photos yet — be the first!</p>
+    <p class="mt-12 text-center text-sm text-muted">No guest photos yet — be the first!</p>
   {:else}
     <div class="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
       {#each photos as photo, index (photo.id)}
         <button
           type="button"
           onclick={() => openLightbox(index)}
-          class="group aspect-square overflow-hidden rounded-xl bg-slate-100"
+          class="group aspect-square overflow-hidden rounded-none bg-paper-2"
         >
           <img
             src={photo.url}
@@ -166,7 +166,7 @@
 
 {#if activeIndex !== null && photos[activeIndex]}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-ink/90 p-4"
     onclick={closeLightbox}
     role="dialog"
     aria-modal="true"
@@ -175,7 +175,7 @@
       type="button"
       onclick={closeLightbox}
       aria-label="Close"
-      class="absolute top-4 right-4 text-3xl leading-none text-white/80 hover:text-white"
+      class="absolute top-4 right-4 text-3xl leading-none text-surface/80 hover:text-surface"
     >
       &times;
     </button>
@@ -183,13 +183,13 @@
       <img
         src={photos[activeIndex].url}
         alt={photos[activeIndex].caption ?? "Guest photo"}
-        class="max-h-[75vh] max-w-full rounded-lg object-contain"
+        class="max-h-[75vh] max-w-full rounded-none object-contain"
       />
       {#if photos[activeIndex].caption || photos[activeIndex].uploader_name}
-        <p class="mt-3 text-center text-sm text-white/80">
+        <p class="mt-3 text-center text-sm text-surface/80">
           {photos[activeIndex].caption}
           {#if photos[activeIndex].uploader_name}
-            <span class="text-white/50">— {photos[activeIndex].uploader_name}</span>
+            <span class="text-surface/50">— {photos[activeIndex].uploader_name}</span>
           {/if}
         </p>
       {/if}

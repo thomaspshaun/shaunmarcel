@@ -1,34 +1,35 @@
-﻿<script lang="ts">
+<script lang="ts">
+  import { reveal } from '$lib/actions/reveal';
   import { venue } from '$lib/site-config';
 
   const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(venue.mapEmbedQuery)}&output=embed`;
 </script>
 
-<section id="venue" class="mx-auto max-w-5xl px-6 py-28">
-  <div class="text-center">
-    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-[var(--color-primary)] sm:text-sm">Location</p>
-    <h2 class="mt-4 font-display text-4xl font-medium tracking-tight text-[var(--color-text)] sm:text-5xl">{venue.name}</h2>
-    <p class="mt-3 text-base text-[var(--color-text-muted)]">{venue.address}</p>
+<section id="venue" class="border-t border-line/70 bg-paper-2/40 px-6 py-24 sm:py-32">
+  <div class="mx-auto max-w-5xl">
+    <div class="text-center" use:reveal>
+      <p class="eyebrow">The Venue</p>
+      <h2 class="heading mt-4">{venue.name}</h2>
+      <p class="mt-4 text-[0.68rem] uppercase tracking-[0.3em] text-muted">{venue.region}</p>
+      <p class="lede mx-auto mt-6 max-w-md">The ceremony and reception will both take place at {venue.name}.</p>
+      <a href={venue.mapsUrl} target="_blank" rel="noopener noreferrer" class="btn-ghost mt-8">Get directions</a>
+    </div>
 
-    <a
-      href={venue.mapsUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="mt-6 inline-flex items-center gap-2 border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-surface)] transition hover:bg-[var(--color-primary-dark)]"
-    >
-      Get Directions
-    </a>
-  </div>
+    {#if venue.image}
+      <figure class="mt-14 overflow-hidden" use:reveal>
+        <img src={venue.image} alt={venue.name} class="aspect-[4/5] w-full object-cover sm:aspect-[16/9]" loading="lazy" />
+      </figure>
+    {/if}
 
-  <div class="mt-10 overflow-hidden border-y border-[var(--color-border)] py-3">
-    <iframe
-      title="Venue map"
-      src={embedSrc}
-      class="h-72 w-full sm:h-96"
-      style="border:0;"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-    ></iframe>
+    <div class="mt-14 border border-line p-2 sm:p-3" use:reveal>
+      <iframe
+        title="Venue map"
+        src={embedSrc}
+        class="h-72 w-full sm:h-96"
+        style="border:0; filter: grayscale(0.7) sepia(0.2) contrast(0.95);"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+      ></iframe>
+    </div>
   </div>
 </section>
-

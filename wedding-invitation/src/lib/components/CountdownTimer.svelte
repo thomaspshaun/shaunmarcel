@@ -5,27 +5,18 @@
 
   let { targetIso }: Props = $props();
 
-  type TimeLeft = {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    reached: boolean;
-  };
+  type TimeLeft = { days: number; hours: number; minutes: number; seconds: number; reached: boolean };
 
   function calculateTimeLeft(target: number): TimeLeft {
     const diff = target - Date.now();
-
-    if (diff <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0, reached: true };
-    }
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((diff / (1000 * 60)) % 60);
-    const seconds = Math.floor((diff / 1000) % 60);
-
-    return { days, hours, minutes, seconds, reached: false };
+    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, reached: true };
+    return {
+      days: Math.floor(diff / 86400000),
+      hours: Math.floor((diff / 3600000) % 24),
+      minutes: Math.floor((diff / 60000) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+      reached: false
+    };
   }
 
   const targetTime = $derived(new Date(targetIso).getTime());
@@ -33,11 +24,7 @@
 
   $effect(() => {
     timeLeft = calculateTimeLeft(targetTime);
-
-    const interval = setInterval(() => {
-      timeLeft = calculateTimeLeft(targetTime);
-    }, 1000);
-
+    const interval = setInterval(() => (timeLeft = calculateTimeLeft(targetTime)), 1000);
     return () => clearInterval(interval);
   });
 
@@ -50,15 +37,13 @@
 </script>
 
 {#if timeLeft.reached}
-  <p class="text-lg font-medium text-rose-600">We're celebrating!</p>
+  <p class="font-display text-2xl italic text-sage-dark">We're celebrating!</p>
 {:else}
-  <div class="grid grid-cols-4 gap-3 sm:gap-4" role="timer" aria-live="polite">
+  <div class="grid grid-cols-4 divide-x divide-line" role="timer" aria-live="off">
     {#each units as unit (unit.label)}
-      <div class="rounded-2xl bg-white/80 px-2 py-3 text-center shadow-sm ring-1 ring-rose-100 sm:px-4 sm:py-4">
-        <p class="font-mono text-xl font-semibold tabular-nums text-slate-900 sm:text-3xl">
-          {String(unit.value).padStart(2, '0')}
-        </p>
-        <p class="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">{unit.label}</p>
+      <div class="px-1 text-center">
+        <p class="font-display text-3xl tabular-nums text-ink sm:text-4xl">{String(unit.value).padStart(2, '0')}</p>
+        <p class="mt-1 text-[0.55rem] font-semibold uppercase tracking-[0.25em] text-muted sm:text-[0.6rem]">{unit.label}</p>
       </div>
     {/each}
   </div>

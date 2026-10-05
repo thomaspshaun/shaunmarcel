@@ -1,14 +1,19 @@
-﻿<script lang="ts">
-  import { onMount } from "svelte";
-  import { registry } from "$lib/site-config";
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import Sprig from '$lib/components/Sprig.svelte';
+  import { reveal } from '$lib/actions/reveal';
+  import { registry } from '$lib/site-config';
 
-  let activeSlide = $state<"registry" | "honeymoon">("registry");
+  let activeSlide = $state<'registry' | 'honeymoon'>('registry');
   let showBankDetails = $state(false);
+  let paused = $state(false);
   let copied = $state(false);
 
+  // Rotate every 5s, but never while someone is reading bank details or hovering/focusing the card.
   onMount(() => {
     const timer = window.setInterval(() => {
-      activeSlide = activeSlide === "registry" ? "honeymoon" : "registry";
+      if (paused || showBankDetails) return;
+      activeSlide = activeSlide === 'registry' ? 'honeymoon' : 'registry';
     }, 5000);
     return () => window.clearInterval(timer);
   });
@@ -18,61 +23,74 @@
     copied = true;
     window.setTimeout(() => (copied = false), 2000);
   }
+
+  const rows = $derived([
+    ['Account name', registry.bankDetails.accountName],
+    ['Bank', registry.bankDetails.bankName],
+    ['Account number', registry.bankDetails.accountNumber],
+    ['Branch code', registry.bankDetails.branchCode]
+  ]);
 </script>
 
-<section id="registry" class="mx-auto max-w-3xl px-6 py-20">
-  <div class="rounded-2xl border border-rose-100 bg-rose-50 p-8 text-center sm:p-10">
-    <p class="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500 sm:text-sm">Gifts</p>
+<section id="registry" class="border-t border-line/70 bg-paper-2/40 px-6 py-24 sm:py-32">
+  <div
+    class="mx-auto max-w-2xl text-center"
+    use:reveal
+    role="group"
+    aria-label="Gift options"
+    onmouseenter={() => (paused = true)}
+    onmouseleave={() => (paused = false)}
+    onfocusin={() => (paused = true)}
+    onfocusout={() => (paused = false)}
+  >
+    <p class="eyebrow">Gifts</p>
 
-    {#if activeSlide === "registry"}
-      <h2 class="mt-4 text-3xl font-light tracking-tight text-slate-900 sm:text-4xl">Gift Registry</h2>
-      <p class="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-600">
-        If you would like to give a gift, you can view our Yuppiechef registry.
-      </p>
-      <a
-        href={registry.yuppiechefUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="mt-6 inline-flex rounded-full bg-rose-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-rose-600"
-      >
-        View our Yuppiechef registry
-      </a>
-    {:else}
-      <h2 class="mt-4 text-3xl font-light tracking-tight text-slate-900 sm:text-4xl">{registry.title}</h2>
-      <p class="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-600">{registry.description}</p>
-      <button
-        type="button"
-        onclick={() => (showBankDetails = !showBankDetails)}
-        aria-expanded={showBankDetails}
-        class="mt-6 inline-flex rounded-full bg-rose-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-rose-600"
-      >
-        {showBankDetails ? "Hide payment details" : "Pay by bank transfer"}
-      </button>
+    <div class="mt-4 min-h-[20rem] sm:min-h-[18rem]">
+      {#key activeSlide}
+        <div class="fade-up" style="--d: 0s">
+          {#if activeSlide === 'registry'}
+            <h2 class="heading">Gift Registry</h2>
+            <p class="lede mx-auto mt-6 max-w-md">If you would like to give a gift, you can view our Yuppiechef registry.</p>
+            <a href={registry.yuppiechefUrl} target="_blank" rel="noopener noreferrer" class="btn mt-8">View our registry</a>
+          {:else}
+            <h2 class="heading">{registry.title}</h2>
+            <p class="lede mx-auto mt-6 max-w-md">{registry.description}</p>
+            <button type="button" class="btn mt-8" aria-expanded={showBankDetails} onclick={() => (showBankDetails = !showBankDetails)}>
+              {showBankDetails ? 'Hide payment details' : 'Pay by bank transfer'}
+            </button>
 
-      {#if showBankDetails}
-        <div class="mx-auto mt-6 max-w-sm rounded-xl bg-white p-5 text-left">
-          <p class="text-sm font-semibold text-slate-900">Banking details</p>
-          <dl class="mt-4 space-y-3 text-sm">
-            <div class="flex justify-between gap-4"><dt class="text-slate-500">Account name</dt><dd class="text-right font-medium text-slate-900">{registry.bankDetails.accountName}</dd></div>
-            <div class="flex justify-between gap-4"><dt class="text-slate-500">Bank</dt><dd class="text-right font-medium text-slate-900">{registry.bankDetails.bankName}</dd></div>
-            <div class="flex justify-between gap-4"><dt class="text-slate-500">Account number</dt><dd class="text-right font-medium text-slate-900">{registry.bankDetails.accountNumber}</dd></div>
-            <div class="flex justify-between gap-4"><dt class="text-slate-500">Branch code</dt><dd class="text-right font-medium text-slate-900">{registry.bankDetails.branchCode}</dd></div>
-          </dl>
-          <div class="mt-4 border-t border-slate-100 pt-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Payment reference</p>
-            <div class="mt-2 flex items-center justify-between gap-3">
-              <code class="text-sm font-medium text-slate-900">{registry.bankDetails.reference}</code>
-              <button type="button" onclick={copyReference} class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">{copied ? "Copied" : "Copy"}</button>
-            </div>
-          </div>
+            {#if showBankDetails}
+              <div class="mx-auto mt-8 max-w-sm border border-line bg-surface p-6 text-left">
+                <p class="eyebrow">Banking details</p>
+                <dl class="mt-4 text-sm">
+                  {#each rows as [label, value] (label)}
+                    <div class="flex justify-between gap-4 border-b border-line/70 py-2.5">
+                      <dt class="text-muted">{label}</dt>
+                      <dd class="text-right text-ink">{value}</dd>
+                    </div>
+                  {/each}
+                </dl>
+                <div class="mt-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="eyebrow eyebrow-accent">Reference</p>
+                    <code class="mt-1 block text-sm text-ink">{registry.bankDetails.reference}</code>
+                  </div>
+                  <button type="button" onclick={copyReference} class="btn-ghost !px-4 !py-2">{copied ? 'Copied' : 'Copy'}</button>
+                </div>
+              </div>
+            {/if}
+          {/if}
         </div>
-      {/if}
-    {/if}
-
-    <div class="mt-8 flex items-center justify-center gap-2" aria-label="Gift options">
-      <button type="button" aria-label="Show gift registry" aria-current={activeSlide === "registry"} onclick={() => (activeSlide = "registry")} class="h-2.5 w-2.5 rounded-full" class:bg-rose-500={activeSlide === "registry"} class:bg-slate-300={activeSlide !== "registry"}></button>
-      <button type="button" aria-label="Show honeymoon fund" aria-current={activeSlide === "honeymoon"} onclick={() => (activeSlide = "honeymoon")} class="h-2.5 w-2.5 rounded-full" class:bg-rose-500={activeSlide === "honeymoon"} class:bg-slate-300={activeSlide !== "honeymoon"}></button>
+      {/key}
     </div>
-    <p class="mt-2 text-xs text-slate-500">Gift options rotate automatically</p>
+
+    <div class="mt-6 flex items-center justify-center gap-1">
+      {#each [['registry', 'Show gift registry'], ['honeymoon', 'Show honeymoon fund']] as [id, label] (id)}
+        <button type="button" aria-label={label} aria-current={activeSlide === id} onclick={() => (activeSlide = id as 'registry' | 'honeymoon')} class="flex h-8 w-8 items-center justify-center">
+          <span class="h-1.5 w-1.5 rotate-45 transition-colors {activeSlide === id ? 'bg-champagne' : 'bg-line'}"></span>
+        </button>
+      {/each}
+    </div>
+    <Sprig class="mx-auto mt-4 h-5 w-28 text-champagne" />
   </div>
 </section>

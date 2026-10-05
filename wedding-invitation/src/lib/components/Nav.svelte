@@ -1,58 +1,46 @@
-﻿<script lang="ts">
+<script lang="ts">
   import { navLinks, site } from '$lib/site-config';
 
   let mobileOpen = $state(false);
-
-  function closeMobileMenu() {
-    mobileOpen = false;
-  }
+  const close = () => (mobileOpen = false);
 </script>
 
-<header class="sticky top-0 z-50 border-b border-[var(--color-border)]/80 bg-[var(--color-background)]/95 backdrop-blur-sm">
-  <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-    <a href="#hero" class="font-display text-2xl tracking-wide text-[var(--color-text)]" onclick={closeMobileMenu}>
+<header class="sticky top-0 z-50 border-b border-line/70 bg-paper/90 backdrop-blur-sm">
+  <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:py-5" aria-label="Main">
+    <a href="#hero" onclick={close} class="text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-ink">
       {site.coupleNames}
     </a>
 
-    <!-- Desktop nav -->
-    <ul class="hidden items-center gap-8 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)] sm:flex">
+    <ul class="hidden items-center gap-9 md:flex">
       {#each navLinks as link (link.href)}
         <li>
-          <a href={link.href} class="transition hover:text-[var(--color-primary)]">{link.label}</a>
+          <a href={link.href} class="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-muted transition-colors hover:text-sage-dark">
+            {link.label}
+          </a>
         </li>
       {/each}
     </ul>
 
-    <!-- Mobile menu toggle -->
     <button
       type="button"
-      class="flex h-10 w-10 items-center justify-center rounded-none border border-[var(--color-border)] text-[var(--color-text)] sm:hidden"
+      class="-mr-2 flex h-11 items-center gap-3 px-2 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-ink md:hidden"
       aria-label="Toggle navigation menu"
       aria-expanded={mobileOpen}
       onclick={() => (mobileOpen = !mobileOpen)}
     >
-      {#if mobileOpen}
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      {:else}
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      {/if}
+      Menu
+      <span class="flex w-5 flex-col gap-1.5" aria-hidden="true">
+        <span class="h-px bg-ink transition-transform {mobileOpen ? 'translate-y-[3.5px] rotate-45' : ''}"></span>
+        <span class="h-px bg-ink transition-transform {mobileOpen ? '-translate-y-[3.5px] -rotate-45' : ''}"></span>
+      </span>
     </button>
   </nav>
 
-  <!-- Mobile menu panel -->
   {#if mobileOpen}
-    <ul class="flex flex-col gap-1 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-sm font-medium text-slate-700 sm:hidden">
+    <ul class="border-t border-line/70 bg-paper px-6 py-4 md:hidden">
       {#each navLinks as link (link.href)}
-        <li>
-          <a
-            href={link.href}
-            class="block rounded-lg px-3 py-2 transition hover:bg-rose-50 hover:text-rose-500"
-            onclick={closeMobileMenu}
-          >
+        <li class="border-b border-line/50 last:border-0">
+          <a href={link.href} onclick={close} class="font-display block py-3.5 text-2xl text-ink">
             {link.label}
           </a>
         </li>
@@ -60,4 +48,3 @@
     </ul>
   {/if}
 </header>
-

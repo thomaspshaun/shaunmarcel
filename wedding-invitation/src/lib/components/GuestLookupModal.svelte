@@ -38,72 +38,49 @@
   }
 </script>
 
-<!-- Open button (usually in Hero or Header) -->
-<button
-  onclick={() => (isOpen = true)}
-  class="inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600"
->
-  <span>🎫 Find My Invitation</span>
-</button>
+<svelte:window onkeydown={(e) => isOpen && e.key === 'Escape' && closeModal()} />
 
-<!-- Modal -->
+<button type="button" onclick={() => (isOpen = true)} class="btn-ghost">Find my invitation</button>
+
 {#if isOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-      <h2 class="text-2xl font-light tracking-tight text-slate-900">Find Your Invitation</h2>
-      <p class="mt-2 text-sm text-slate-600">
-        Enter your 8-character invitation code to access your personalized experience.
-      </p>
-
-      <form onsubmit={handleSubmit} class="mt-6">
-        <div>
-          <label for="code" class="block text-sm font-medium text-slate-700">Invitation Code</label>
-          <input
-            id="code"
-            type="text"
-            bind:value={code}
-            placeholder="e.g., AB12CD34"
-            maxlength="8"
-            class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-2 text-center text-lg font-mono uppercase tracking-widest text-slate-900 placeholder-slate-400 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/10"
-            disabled={loading}
-          />
-        </div>
-
-        {#if error}
-          <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        {/if}
-
-        <div class="mt-6 flex gap-3">
-          <button
-            type="button"
-            onclick={closeModal}
-            class="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            disabled={loading}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading || !code.trim()}
-            class="flex-1 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Looking up...' : 'Unlock'}
-          </button>
-        </div>
-      </form>
-
+  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4">
+    <div class="relative w-full max-w-md border border-line bg-paper p-8 sm:p-10" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="lookup-title">
       <button
         type="button"
         onclick={closeModal}
-        class="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-        aria-label="Close modal"
+        class="absolute right-2 top-2 flex h-11 w-11 items-center justify-center text-muted hover:text-ink"
+        aria-label="Close"
       >
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
+
+      <p class="eyebrow text-center">Your invitation</p>
+      <h2 id="lookup-title" class="font-display mt-3 text-center text-3xl font-light text-ink">Find your invitation</h2>
+      <p class="lede mt-3 text-center text-sm">Enter the 8-character code from your invitation.</p>
+
+      <form onsubmit={handleSubmit} class="mt-8">
+        <label for="code" class="sr-only">Invitation code</label>
+        <input
+          id="code"
+          type="text"
+          bind:value={code}
+          placeholder="AB12CD34"
+          maxlength="8"
+          autocomplete="off"
+          class="w-full border border-line bg-surface px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.3em] text-ink placeholder:text-muted/50 focus:border-sage focus:outline-none"
+          disabled={loading}
+        />
+
+        {#if error}
+          <p class="mt-4 border border-line bg-surface p-3 text-sm text-ink" role="alert">{error}</p>
+        {/if}
+
+        <button type="submit" disabled={loading || !code.trim()} class="btn mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50">
+          {loading ? 'Looking up…' : 'Unlock'}
+        </button>
+      </form>
     </div>
   </div>
 {/if}

@@ -1,12 +1,19 @@
-﻿// Central site configuration for copy that appears across multiple components/pages.
+// Central site configuration for copy that appears across multiple components/pages.
 // Update this file as event details are confirmed.
 
 export const site = {
   coupleNames: "Shaun & Marcel",
-  tagline: "A relaxed wedding weekend",
-  weddingDateLabel: "Saturday, 26 April 2025",
-  countdownTargetIso: "2025-04-26T13:30:00+02:00",
-  venueName: "Eikenhof Estate, Cape Winelands",
+  names: ["Shaun", "Marcel"] as const,
+  tagline: "Together with their families",
+  weddingDateLabel: "17 April 2027",
+  // Counts down to the start of the ceremony.
+  countdownTargetIso: "2027-04-17T14:00:00+02:00",
+  venueName: "Eikenhof Estate",
+  region: "Cape Winelands · South Africa",
+  // Shown in the RSVP section when set, e.g. "1 February 2027".
+  rsvpDeadlineLabel: "",
+  // Optional editorial photograph for the hero, e.g. "/hero.jpg" (place the file in /static).
+  heroImage: "",
   contactPhoneDisplay: "083 633 8108",
   contactPhoneHref: "tel:+27836338108",
   siteUrl: "https://dev.shaunmarcel.co.za",
@@ -28,134 +35,216 @@ export const registry = {
 };
 
 export const navLinks = [
-  { href: "#hero", label: "Home" },
-  { href: "#details", label: "Details" },
+  { href: "#weekend", label: "Our Weekend" },
+  { href: "#wedding", label: "The Wedding" },
+  { href: "#venue", label: "Venue" },
+  { href: "#accommodation", label: "Accommodation" },
   { href: "#rsvp", label: "RSVP" },
-  { href: "#gallery", label: "Gallery" },
-  { href: "#guestbook", label: "Guestbook" },
 ];
 
-// Wedding weekend schedule: Friday arrival, Saturday celebration, Sunday farewell
+// Saturday programme. Also the source data for the "Add to Calendar" entry.
 export const scheduleEvents = [
   {
-    id: "friday-arrival",
-    time: "From 15:00",
-    title: "Friday — Arrive & Settle In",
-    description: "Guests arrive and settle in for a relaxed evening. Meet, unwind, and enjoy the surroundings.",
-    startIso: "2025-04-25T15:00:00+02:00",
-    endIso: "2025-04-25T22:00:00+02:00",
-  },
-  {
-    id: "welcome-drink",
-    time: "13:30 – 14:00",
-    title: "Saturday — Guest Arrival & Welcome Drink",
-    description: "Guests arrive and receive a welcome drink.",
-    startIso: "2025-04-26T13:30:00+02:00",
-    endIso: "2025-04-26T14:00:00+02:00",
+    id: "welcome",
+    time: "13:30",
+    title: "Guest arrival & welcome drink",
+    description: "Guests arrive and are welcomed with a drink.",
+    startIso: "2027-04-17T13:30:00+02:00",
+    endIso: "2027-04-17T14:00:00+02:00",
   },
   {
     id: "ceremony",
-    time: "14:00 – 14:45",
-    title: "Wedding Ceremony",
-    description: "Join us as we say our vows at Eikenhof Estate.",
-    startIso: "2025-04-26T14:00:00+02:00",
-    endIso: "2025-04-26T14:45:00+02:00",
+    time: "14:00",
+    title: "Wedding ceremony",
+    description: "The wedding ceremony at Eikenhof Estate.",
+    startIso: "2027-04-17T14:00:00+02:00",
+    endIso: "2027-04-17T14:45:00+02:00",
   },
   {
     id: "cocktails",
-    time: "14:45 – 16:30",
-    title: "Cocktails & Canapés",
-    description: "Celebrate with drinks and canapés.",
-    startIso: "2025-04-26T14:45:00+02:00",
-    endIso: "2025-04-26T16:30:00+02:00",
+    time: "14:45",
+    title: "Cocktails & canapés",
+    description: "Cocktails and canapés.",
+    startIso: "2027-04-17T14:45:00+02:00",
+    endIso: "2027-04-17T16:30:00+02:00",
   },
   {
     id: "photos",
-    time: "16:30 – 17:15",
-    title: "Photos & Mingling",
-    description: "Wedding photos and time to mingle with guests.",
-    startIso: "2025-04-26T16:30:00+02:00",
-    endIso: "2025-04-26T17:15:00+02:00",
+    time: "16:30",
+    title: "Wedding photos & mingling",
+    description: "Wedding photos and time to mingle.",
+    startIso: "2027-04-17T16:30:00+02:00",
+    endIso: "2027-04-17T17:15:00+02:00",
   },
   {
     id: "dinner",
     time: "17:30",
-    title: "Dinner & Reception",
-    description: "Dinner and celebration reception.",
-    startIso: "2025-04-26T17:30:00+02:00",
-    endIso: "2025-04-26T20:15:00+02:00",
+    title: "Dinner & reception",
+    description: "Dinner and reception.",
+    startIso: "2027-04-17T17:30:00+02:00",
+    endIso: "2027-04-17T20:15:00+02:00",
   },
   {
     id: "dancing",
     time: "20:15",
-    title: "Dancing & Celebration",
-    description: "Dance and celebrate the night away.",
-    startIso: "2025-04-26T20:15:00+02:00",
-    endIso: "2025-04-27T00:00:00+02:00",
+    title: "Dancing & celebration",
+    description: "Dancing and celebration.",
+    startIso: "2027-04-17T20:15:00+02:00",
+    endIso: "2027-04-18T00:00:00+02:00",
   },
   {
-    id: "sunday-farewell",
-    time: "From 09:00",
-    title: "Sunday — Breakfast & Farewell",
-    description: "Enjoy a relaxed morning breakfast before heading home.",
-    startIso: "2025-04-27T09:00:00+02:00",
-    endIso: "2025-04-27T12:00:00+02:00",
+    id: "close",
+    time: "00:00",
+    title: "Reception ends",
+    description: "The reception ends.",
+    startIso: "2027-04-18T00:00:00+02:00",
+    endIso: "2027-04-18T00:00:00+02:00",
+  },
+];
+
+export const weekend = [
+  {
+    id: "friday",
+    day: "Friday",
+    date: "16 April",
+    title: "Arrive & Settle In",
+    description:
+      "A relaxed, informal evening for guests arriving at Eikenhof Estate: a chance to meet, unwind and enjoy the surroundings.",
+    note: "Evening plans to be confirmed",
+  },
+  {
+    id: "saturday",
+    day: "Saturday",
+    date: "17 April",
+    title: "Our Wedding Day",
+    description: "The main celebration takes place on Saturday.",
+    note: "",
+  },
+  {
+    id: "sunday",
+    day: "Sunday",
+    date: "18 April",
+    title: "Breakfast & Farewell",
+    description: "A relaxed morning before check-out and heading home.",
+    note: "Breakfast & check-out details to be confirmed",
   },
 ];
 
 export const venue = {
   name: "Eikenhof Estate",
-  address: "Eikenhof Estate, Stellenbosch, Cape Winelands, South Africa",
-  mapEmbedQuery: "Eikenhof Estate Stellenbosch",
+  region: "Cape Winelands · South Africa",
+  address: "Eikenhof Estate, Cape Winelands, South Africa",
+  mapEmbedQuery: "Eikenhof Estate, Cape Winelands, South Africa",
   mapsUrl:
-    "https://www.google.com/maps/search/?api=1&query=Eikenhof+Estate+Stellenbosch",
+    "https://www.google.com/maps/search/?api=1&query=Eikenhof+Estate+Cape+Winelands+South+Africa",
+  // Optional editorial photograph, e.g. "/venue.jpg" (place the file in /static).
+  image: "",
 };
 
-export const accommodations = [
+export interface Accommodation {
+  id: string;
+  name: string;
+  distance: string;
+  description: string;
+  // Relative guide only: "$" to "$$$$". Exact 2027 rates are not published yet.
+  price: string;
+  url: string;
+  group: "closest" | "further";
+}
+
+const search = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+
+export const accommodations: Accommodation[] = [
   {
     id: "vine-guesthouse",
     name: "Vine Guesthouse",
-    distance: "~5–7 min drive",
-    notes: "12 boutique rooms in Koelenhof. Perfect for couples and small groups.",
-    bookingCode: "$",
-    url: "https://www.vineguesthouse.co.za",
+    distance: "5–7 min",
+    description: "A boutique guesthouse in Koelenhof with 12 rooms, and the closest practical option to the venue.",
+    price: "$$",
+    // TODO: replace with the official website link.
+    url: search("Vine Guesthouse Koelenhof Stellenbosch"),
+    group: "closest",
   },
   {
     id: "groenvlei-guest-farm",
     name: "Groenvlei Guest Farm",
-    distance: "~7–9 min drive",
-    notes: "5 guesthouse rooms + self-catering units. Farm atmosphere, ideal for families.",
-    bookingCode: "$",
+    distance: "7–9 min",
+    description: "A Winelands guest farm with five en-suite guesthouse rooms and self-catering units.",
+    price: "$$",
     url: "https://groenvlei.com",
+    group: "closest",
   },
   {
     id: "hazendal-hotel-spa",
     name: "Hazendal Hotel & Spa",
-    distance: "~8–10 min drive",
-    notes: "34 luxury rooms/suites. Premium option for guests seeking a full hotel experience.",
-    bookingCode: "$$",
-    url: "https://www.hazendal.co.za/stay",
+    distance: "8–10 min",
+    description: "A hotel and spa with 34 rooms and suites: our premium hotel option.",
+    price: "$$$$",
+    url: "https://www.hazendal.co.za/stay/",
+    group: "closest",
   },
   {
-    id: "devonvale-golf-wine",
+    id: "devonvale-golf-wine-estate",
     name: "Devonvale Golf & Wine Estate",
-    distance: "~10–12 min drive",
-    notes: "40+ rooms and holiday homes. Excellent for families and larger groups.",
-    bookingCode: "$$",
-    url: "https://devonvale.co.za/accommodation",
+    distance: "10–12 min",
+    description: "Hotel rooms, suites and holiday homes, well suited to families and groups.",
+    price: "$$$",
+    url: "https://devonvale.co.za/accommodation/",
+    group: "closest",
+  },
+  {
+    id: "rouana-guest-farm",
+    name: "Rouana Guest Farm",
+    distance: "12–15 min",
+    description: "A quiet guest farm with around ten rooms and units, sleeping about twenty.",
+    price: "$$",
+    url: "https://rouanaguestfarm.com",
+    group: "further",
+  },
+  {
+    id: "kunjani-wines",
+    name: "Kunjani Wines",
+    distance: "13–16 min",
+    description: "Four villas on a wine farm, ideal for groups who would like to stay together.",
+    price: "$$$",
+    url: "https://www.kunjaniwines.co.za",
+    group: "further",
+  },
+  {
+    id: "zevenwacht-wine-estate",
+    name: "Zevenwacht Wine Estate",
+    distance: "15–18 min",
+    description: "Country inn suites, vineyard cottages and a self-catering chalet, good for families and larger groups.",
+    price: "$$$",
+    // TODO: replace with the official website link.
+    url: search("Zevenwacht Wine Estate accommodation"),
+    group: "further",
+  },
+  {
+    id: "the-log-collective",
+    name: "The Log Collective",
+    distance: "18–20 min",
+    description: "Vineyard cabins, villas and an apartment: something a little different.",
+    price: "$$$",
+    url: "https://thelogcollective.co.za",
+    group: "further",
+  },
+  {
+    id: "devon-valley-hotel",
+    name: "Devon Valley Hotel",
+    distance: "20–22 min",
+    description: "A 50-room hotel, a good choice for larger numbers.",
+    price: "$$$",
+    url: "https://devonvalleyhotel.com",
+    group: "further",
+  },
+  {
+    id: "spier-hotel",
+    name: "Spier Hotel",
+    distance: "22–25 min",
+    description: "A large Winelands hotel with 80 rooms and two villas, plus restaurants and a spa.",
+    price: "$$$",
+    url: "https://www.spier.co.za",
+    group: "further",
   },
 ];
-
-// Additional accommodation options for guests who prefer further-out venues
-export const additionalAccommodations = [
-  { name: "Rouana Guest Farm", distance: "~12–15 min", price: "$", url: "https://rouanaguestfarm.com" },
-  { name: "Kunjani Wines", distance: "~13–16 min", price: "$$", url: "https://www.kunjaniwines.co.za" },
-  { name: "Zevenwacht Wine Estate", distance: "~15–18 min", price: "$$", url: "https://zevenwacht.co.za" },
-  { name: "The Log Collective", distance: "~18–20 min", price: "$$", url: "https://thelogcollective.co.za" },
-  { name: "Devon Valley Hotel", distance: "~20–22 min", price: "$$", url: "https://devonvalleyhotel.com" },
-  { name: "Spier Hotel", distance: "~22–25 min", price: "$$", url: "https://www.spier.co.za" },
-];
-
-
-
-
