@@ -112,27 +112,46 @@ export const venue = {
 
 export const accommodations = [
   {
-    id: "nearby-boutique-hotel",
-    name: "Boutique Hotel Option",
-    distance: "~5–10 min drive",
-    notes: "Comfortable accommodation within easy reach of the venue.",
-    bookingCode: "Coming soon",
-    url: "https://www.google.com/maps/search/?api=1&query=Stellenbosch+accommodation",
+    id: "vine-guesthouse",
+    name: "Vine Guesthouse",
+    distance: "~5–7 min drive",
+    notes: "12 boutique rooms in Koelenhof. Perfect for couples and small groups.",
+    bookingCode: "$",
+    url: "https://www.vineguesthouse.co.za",
   },
   {
-    id: "guest-houses",
-    name: "Local Guest Houses",
-    distance: "~8–15 min drive",
-    notes: "Charming guest houses in the nearby Winelands.",
-    bookingCode: "Coming soon",
-    url: "https://www.google.com/maps/search/?api=1&query=Stellenbosch+guest+house",
+    id: "groenvlei-guest-farm",
+    name: "Groenvlei Guest Farm",
+    distance: "~7–9 min drive",
+    notes: "5 guesthouse rooms + self-catering units. Farm atmosphere, ideal for families.",
+    bookingCode: "$",
+    url: "https://groenvlei.com",
   },
   {
-    id: "self-catering",
-    name: "Self-Catering Units",
-    distance: "~10–20 min drive",
-    notes: "More affordable self-catering options for flexibility.",
-    bookingCode: "Coming soon",
-    url: "https://www.google.com/maps/search/?api=1&query=Stellenbosch+self+catering",
+    id: "hazendal-hotel-spa",
+    name: "Hazendal Hotel & Spa",
+    distance: "~8–10 min drive",
+    notes: "34 luxury rooms/suites. Premium option for guests seeking a full hotel experience.",
+    bookingCode: "$$",
+    url: "https://www.hazendal.co.za/stay",
+  },
+  {
+    id: "devonvale-golf-wine",
+    name: "Devonvale Golf & Wine Estate",
+    distance: "~10–12 min drive",
+    notes: "40+ rooms and holiday homes. Excellent for families and larger groups.",
+    bookingCode: "$$",
+    url: "https://devonvale.co.za/accommodation",
   },
 ];
+
+// Additional accommodation options for guests who prefer further-out venues
+export const additionalAccommodations = [
+  { name: "Rouana Guest Farm", distance: "~12–15 min", price: "$", url: "https://rouanaguestfarm.com" },
+  { name: "Kunjani Wines", distance: "~13–16 min", price: "$$", url: "https://www.kunjaniwines.co.za" },
+  { name: "Zevenwacht Wine Estate", distance: "~15–18 min", price: "$$", url: "https://zevenwacht.co.za" },
+  { name: "The Log Collective", distance: "~18–20 min", price: "$$", url: "https://thelogcollective.co.za" },
+  { name: "Devon Valley Hotel", distance: "~20–22 min", price: "$$", url: "https://devonvalleyhotel.com" },
+  { name: "Spier Hotel", distance: "~22–25 min", price: "$$", url: "https://www.spier.co.za" },
+];
+
