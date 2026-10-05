@@ -56,7 +56,9 @@ export interface SeatingSeat {
 // Checklists
 // ---------------------------------------------------------------------------
 
-export async function fetchChecklistItems(section: string): Promise<ChecklistItem[]> {
+export async function fetchChecklistItems(
+  section: string,
+): Promise<ChecklistItem[]> {
   const { data, error } = await supabase
     .from("planner_checklist_items")
     .select("*")
@@ -93,10 +95,15 @@ export async function fetchChecklistItems(section: string): Promise<ChecklistIte
     return [];
   }
 
-  return (seeded as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order);
+  return (seeded as ChecklistItem[]).sort(
+    (a, b) => a.sort_order - b.sort_order,
+  );
 }
 
-export async function toggleChecklistItem(id: string, checked: boolean): Promise<void> {
+export async function toggleChecklistItem(
+  id: string,
+  checked: boolean,
+): Promise<void> {
   const { error } = await supabase
     .from("planner_checklist_items")
     .update({ checked })
@@ -120,7 +127,10 @@ export async function addChecklistItem(
 }
 
 export async function deleteChecklistItem(id: string): Promise<void> {
-  const { error } = await supabase.from("planner_checklist_items").delete().eq("id", id);
+  const { error } = await supabase
+    .from("planner_checklist_items")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error("Could not delete checklist item.");
 }
 
@@ -137,7 +147,10 @@ export async function fetchVendors(): Promise<PlannerVendor[]> {
   return data as PlannerVendor[];
 }
 
-export async function addVendor(role: string, name: string): Promise<PlannerVendor> {
+export async function addVendor(
+  role: string,
+  name: string,
+): Promise<PlannerVendor> {
   const { data, error } = await supabase
     .from("planner_vendors")
     .insert({ role, name })
@@ -147,17 +160,28 @@ export async function addVendor(role: string, name: string): Promise<PlannerVend
   return data as PlannerVendor;
 }
 
-export async function updateVendor(id: string, patch: Partial<PlannerVendor>): Promise<void> {
-  const { error } = await supabase.from("planner_vendors").update(patch).eq("id", id);
+export async function updateVendor(
+  id: string,
+  patch: Partial<PlannerVendor>,
+): Promise<void> {
+  const { error } = await supabase
+    .from("planner_vendors")
+    .update(patch)
+    .eq("id", id);
   if (error) throw new Error("Could not update vendor.");
 }
 
 export async function deleteVendor(id: string): Promise<void> {
-  const { error } = await supabase.from("planner_vendors").delete().eq("id", id);
+  const { error } = await supabase
+    .from("planner_vendors")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error("Could not delete vendor.");
 }
 
-export async function fetchVendorPayments(vendorId: string): Promise<VendorPayment[]> {
+export async function fetchVendorPayments(
+  vendorId: string,
+): Promise<VendorPayment[]> {
   const { data, error } = await supabase
     .from("planner_vendor_payments")
     .select("*")
@@ -181,13 +205,22 @@ export async function addVendorPayment(
   return data as VendorPayment;
 }
 
-export async function updateVendorPayment(id: string, patch: Partial<VendorPayment>): Promise<void> {
-  const { error } = await supabase.from("planner_vendor_payments").update(patch).eq("id", id);
+export async function updateVendorPayment(
+  id: string,
+  patch: Partial<VendorPayment>,
+): Promise<void> {
+  const { error } = await supabase
+    .from("planner_vendor_payments")
+    .update(patch)
+    .eq("id", id);
   if (error) throw new Error("Could not update payment.");
 }
 
 export async function deleteVendorPayment(id: string): Promise<void> {
-  const { error } = await supabase.from("planner_vendor_payments").delete().eq("id", id);
+  const { error } = await supabase
+    .from("planner_vendor_payments")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error("Could not delete payment.");
 }
 
@@ -204,7 +237,10 @@ export async function fetchSeatingTables(): Promise<SeatingTable[]> {
   return data as SeatingTable[];
 }
 
-export async function addSeatingTable(name: string, sortOrder: number): Promise<SeatingTable> {
+export async function addSeatingTable(
+  name: string,
+  sortOrder: number,
+): Promise<SeatingTable> {
   const { data, error } = await supabase
     .from("planner_seating_tables")
     .insert({ name, sort_order: sortOrder })
@@ -215,11 +251,16 @@ export async function addSeatingTable(name: string, sortOrder: number): Promise<
 }
 
 export async function deleteSeatingTable(id: string): Promise<void> {
-  const { error } = await supabase.from("planner_seating_tables").delete().eq("id", id);
+  const { error } = await supabase
+    .from("planner_seating_tables")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error("Could not delete table.");
 }
 
-export async function fetchSeatingSeats(tableId: string): Promise<SeatingSeat[]> {
+export async function fetchSeatingSeats(
+  tableId: string,
+): Promise<SeatingSeat[]> {
   const { data, error } = await supabase
     .from("planner_seating_seats")
     .select("*")
@@ -237,20 +278,34 @@ export async function addSeatingSeat(
 ): Promise<SeatingSeat> {
   const { data, error } = await supabase
     .from("planner_seating_seats")
-    .insert({ table_id: tableId, seat_label: seatLabel, guest_name: guestName, sort_order: sortOrder })
+    .insert({
+      table_id: tableId,
+      seat_label: seatLabel,
+      guest_name: guestName,
+      sort_order: sortOrder,
+    })
     .select("*")
     .single();
   if (error || !data) throw new Error("Could not add seat.");
   return data as SeatingSeat;
 }
 
-export async function updateSeatingSeat(id: string, patch: Partial<SeatingSeat>): Promise<void> {
-  const { error } = await supabase.from("planner_seating_seats").update(patch).eq("id", id);
+export async function updateSeatingSeat(
+  id: string,
+  patch: Partial<SeatingSeat>,
+): Promise<void> {
+  const { error } = await supabase
+    .from("planner_seating_seats")
+    .update(patch)
+    .eq("id", id);
   if (error) throw new Error("Could not update seat.");
 }
 
 export async function deleteSeatingSeat(id: string): Promise<void> {
-  const { error } = await supabase.from("planner_seating_seats").delete().eq("id", id);
+  const { error } = await supabase
+    .from("planner_seating_seats")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error("Could not delete seat.");
 }
 
@@ -258,8 +313,13 @@ export async function deleteSeatingSeat(id: string): Promise<void> {
 // Free-text notes (key/value)
 // ---------------------------------------------------------------------------
 
-export async function fetchNotes(keys: string[]): Promise<Record<string, string>> {
-  const { data, error } = await supabase.from("planner_notes").select("key, value").in("key", keys);
+export async function fetchNotes(
+  keys: string[],
+): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from("planner_notes")
+    .select("key, value")
+    .in("key", keys);
   if (error) throw new Error("Could not load notes.");
   const out: Record<string, string> = {};
   for (const row of data ?? []) {

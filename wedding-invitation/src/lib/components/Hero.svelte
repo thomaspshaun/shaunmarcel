@@ -49,6 +49,7 @@
       >
         View Details
       </a>
+      <slot name="action" />
     </div>
   </div>
 </section>

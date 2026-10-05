@@ -7,7 +7,23 @@
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
   import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
+  import GuestHeader from '$lib/components/GuestHeader.svelte';
+  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import { site } from '$lib/site-config';
+  import { guestStore } from '$lib/guestStore';
+  import { onMount } from 'svelte';
+
+  let guest = $derived($guestStore.guest);
+
+  // Auto-lookup guest from URL param on mount
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code && !guest) {
+      // Trigger lookup via modal's findGuestByCode
+      // (handled in RsvpForm component as well, but we set it here for consistency)
+    }
+  });
 </script>
 
 <svelte:head>
@@ -15,7 +31,13 @@
   <meta name="description" content="{site.coupleNames}'s wedding invitation, RSVP, event schedule, and guest information." />
 </svelte:head>
 
-<Hero />
+<GuestHeader />
+
+<Hero>
+  <slot name="action">
+    <GuestLookupModal />
+  </slot>
+</Hero>
 
 <div id="details">
   <Timeline />

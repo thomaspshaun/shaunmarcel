@@ -202,7 +202,12 @@ export async function postGuestbookComment(
 // ---------------------------------------------------------------------------
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB per photo
-const ALLOWED_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+const ALLOWED_UPLOAD_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+];
 
 export async function fetchGuestPhotos(): Promise<GuestPhoto[]> {
   const { data, error } = await supabase
@@ -230,9 +235,15 @@ export async function uploadGuestPhoto(
   caption: string,
 ): Promise<void> {
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error("That photo is larger than 8MB. Please choose a smaller file.");
+    throw new Error(
+      "That photo is larger than 8MB. Please choose a smaller file.",
+    );
   }
-  if (ALLOWED_UPLOAD_TYPES.length && file.type && !ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+  if (
+    ALLOWED_UPLOAD_TYPES.length &&
+    file.type &&
+    !ALLOWED_UPLOAD_TYPES.includes(file.type)
+  ) {
     throw new Error("Please upload a JPG, PNG, WEBP, or HEIC photo.");
   }
 
@@ -256,6 +267,8 @@ export async function uploadGuestPhoto(
 
   if (insertError) {
     console.error("uploadGuestPhoto insert error", insertError);
-    throw new Error("Your photo uploaded but could not be saved. Please try again.");
+    throw new Error(
+      "Your photo uploaded but could not be saved. Please try again.",
+    );
   }
 }
