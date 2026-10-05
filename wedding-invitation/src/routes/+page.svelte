@@ -10,8 +10,7 @@
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
   import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
-  import GuestHeader from '$lib/components/GuestHeader.svelte';
-  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
+  import GuestHeader from '$lib/components/GuestHeader.svelte'; // Hidden for now\n  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
   import { site } from '$lib/site-config';
   import { guestStore } from '$lib/guestStore';
@@ -35,7 +34,7 @@
   <meta name="description" content="{site.coupleNames}'s wedding invitation, RSVP, weekend programme and guest information." />
 </svelte:head>
 
-<GuestHeader />
+<!-- GuestHeader hidden for now -->
 
 <Hero>
   {#snippet action()}

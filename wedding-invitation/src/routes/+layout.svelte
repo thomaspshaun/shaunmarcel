@@ -30,7 +30,7 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-  <Nav />
+  <!-- Nav hidden for now -->
   <main class="flex-1">
     {@render children()}
   </main>
