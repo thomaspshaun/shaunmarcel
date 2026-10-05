@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
-  import CountdownTimer from '$lib/components/CountdownTimer.svelte';
-  import Sprig from '$lib/components/Sprig.svelte';
-  import { site } from '$lib/site-config';
-  import { guestStore } from '$lib/guestStore';
+  import type { Snippet } from "svelte";
+  import CountdownTimer from "$lib/components/CountdownTimer.svelte";
+  import Sprig from "$lib/components/Sprig.svelte";
+  import { site } from "$lib/site-config";
+  import { guestStore } from "$lib/guestStore";
 
   let { action }: { action?: Snippet } = $props();
 
@@ -11,11 +11,15 @@
 
   let invitationText = $derived.by(() => {
     if (!guest) return null;
-    const names = [guest.first_name, guest.last_name];
-    if (guest.plus_one_allowed && guest.plus_one_name) {
+    let names = [guest.first_name];
+    
+    if (guest.partner_first_name && guest.partner_last_name) {
+      names.push(guest.partner_first_name + " " + guest.partner_last_name);
+    } else if (guest.plus_one_allowed && guest.plus_one_name) {
       names.push(guest.plus_one_name);
     }
-    return names.join(' & ');
+    
+    return names.join(" & ");
   });
 </script>
 
