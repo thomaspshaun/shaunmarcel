@@ -10,7 +10,8 @@
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
   import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
-  import GuestHeader from '$lib/components/GuestHeader.svelte'; // Hidden for now\n  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
+  import GuestHeader from '$lib/components/GuestHeader.svelte'; // Hidden for now
+  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
   import { site } from '$lib/site-config';
   import { guestStore } from '$lib/guestStore';
