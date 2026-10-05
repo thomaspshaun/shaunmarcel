@@ -31,23 +31,12 @@
           {invitationText}
           <span class="block text-sm uppercase tracking-[0.18em] sm:text-base">you are invited to the wedding of</span>
         </p>
-        <h1 class="font-display mt-10 text-[clamp(4.75rem,21vw,10rem)] leading-[0.84] font-light text-ink sm:mt-12">
-          <span>{site.names[0]}</span>
-          <span class="font-script mx-2 text-[0.58em] text-champagne sm:mx-4" aria-label="and">&amp;</span>
-          <span>{site.names[1]}</span>
-        </h1>
+        <h1 class="font-script mt-8 text-5xl text-ink">{site.coupleNames}</h1>
       </div>
     {:else}
       <p class="eyebrow fade-up" style="--d: 0.1s">{site.tagline}</p>
 
-      <h1
-        class="font-display fade-up mt-10 flex flex-col items-center text-[clamp(3.75rem,15vw,8rem)] leading-[0.95] font-light text-ink sm:mt-12 sm:flex-row sm:items-baseline sm:justify-center sm:gap-6"
-        style="--d: 0.35s"
-      >
-        <span>{site.names[0]}</span>
-        <span class="font-script my-1 text-[0.62em] leading-none text-champagne sm:my-0" aria-label="and">&amp;</span>
-        <span>{site.names[1]}</span>
-      </h1>
+      <h1 class="font-script fade-up mt-10 text-5xl text-ink" style="--d: 0.35s">{site.coupleNames}</h1>
     {/if}
 
     <Sprig class="fade-up mx-auto mt-10 h-5 w-36 text-champagne" />
