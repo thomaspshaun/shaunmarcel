@@ -82,6 +82,7 @@ export interface GuestLookupResult {
   last_name: string;
   guest_type: string;
   plus_one_allowed: boolean;
+  plus_one_name?: string | null;
   rsvp_status: string;
   dietary_notes: string | null;
   accommodation_name?: string | null;

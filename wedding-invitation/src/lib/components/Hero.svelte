@@ -3,22 +3,44 @@
   import CountdownTimer from '$lib/components/CountdownTimer.svelte';
   import Sprig from '$lib/components/Sprig.svelte';
   import { site } from '$lib/site-config';
+  import { guestStore } from '$lib/guestStore';
 
   let { action }: { action?: Snippet } = $props();
+
+  let guest = $derived($guestStore.guest);
+
+  let invitationText = $derived.by(() => {
+    if (!guest) return null;
+    const names = [guest.first_name, guest.last_name];
+    if (guest.plus_one_allowed && guest.plus_one_name) {
+      names.push(guest.plus_one_name);
+    }
+    return names.join(' & ');
+  });
 </script>
 
 <section id="hero" class="px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">
   <div class="mx-auto max-w-4xl text-center">
-    <p class="eyebrow fade-up" style="--d: 0.1s">{site.tagline}</p>
+    {#if invitationText}
+      <p class="font-display fade-up text-3xl leading-relaxed text-ink sm:text-4xl" style="--d: 0.1s">
+        {invitationText}
+        <span class="block">
+          <span class="text-muted">you are invited to the wedding of</span>
+        </span>
+        <span class="font-script text-[0.6em] text-champagne">Shaun & Marcel</span>
+      </p>
+    {:else}
+      <p class="eyebrow fade-up" style="--d: 0.1s">{site.tagline}</p>
 
-    <h1
-      class="font-display fade-up mt-10 flex flex-col items-center text-[clamp(3.75rem,15vw,8rem)] leading-[0.95] font-light text-ink sm:mt-12 sm:flex-row sm:items-baseline sm:justify-center sm:gap-6"
-      style="--d: 0.35s"
-    >
-      <span>{site.names[0]}</span>
-      <span class="font-script my-1 text-[0.62em] leading-none text-champagne sm:my-0" aria-label="and">&amp;</span>
-      <span>{site.names[1]}</span>
-    </h1>
+      <h1
+        class="font-display fade-up mt-10 flex flex-col items-center text-[clamp(3.75rem,15vw,8rem)] leading-[0.95] font-light text-ink sm:mt-12 sm:flex-row sm:items-baseline sm:justify-center sm:gap-6"
+        style="--d: 0.35s"
+      >
+        <span>{site.names[0]}</span>
+        <span class="font-script my-1 text-[0.62em] leading-none text-champagne sm:my-0" aria-label="and">&amp;</span>
+        <span>{site.names[1]}</span>
+      </h1>
+    {/if}
 
     <Sprig class="fade-up mx-auto mt-10 h-5 w-36 text-champagne" />
 
