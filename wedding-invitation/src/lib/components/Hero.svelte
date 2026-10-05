@@ -26,13 +26,17 @@
 <section id="hero" class="px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">
   <div class="mx-auto max-w-4xl text-center">
     {#if invitationText}
-      <p class="font-display fade-up text-3xl leading-relaxed text-ink sm:text-4xl" style="--d: 0.1s">
-        {invitationText}
-        <span class="block">
-          <span class="text-muted">you are invited to the wedding of</span>
-        </span>
-        <span class="font-script text-[0.6em] text-champagne">Shaun & Marcel</span>
-      </p>
+      <div class="fade-up" style="--d: 0.1s">
+        <p class="font-display text-xl leading-relaxed text-muted sm:text-2xl">
+          {invitationText}
+          <span class="block text-sm uppercase tracking-[0.18em] sm:text-base">you are invited to the wedding of</span>
+        </p>
+        <h1 class="font-display mt-10 text-[clamp(4.75rem,21vw,10rem)] leading-[0.84] font-light text-ink sm:mt-12">
+          <span>{site.names[0]}</span>
+          <span class="font-script mx-2 text-[0.58em] text-champagne sm:mx-4" aria-label="and">&amp;</span>
+          <span>{site.names[1]}</span>
+        </h1>
+      </div>
     {:else}
       <p class="eyebrow fade-up" style="--d: 0.1s">{site.tagline}</p>
 
