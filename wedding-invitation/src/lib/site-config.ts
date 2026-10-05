@@ -11,6 +11,15 @@ export const site = {
   contactPhoneDisplay: "083 633 8108",
   contactPhoneHref: "tel:+27836338108",
   siteUrl: "https://dev.shaunmarcel.co.za",
+  socialImagePath: "/favicon.svg",
+};
+
+export const registry = {
+  title: "Honeymoon Fund",
+  description:
+    "Your presence is the greatest gift. If you would like to contribute, you can help us create memories on our honeymoon.",
+  paymentUrl: "",
+  bankTransferReference: "Shaun & Marcel",
 };
 
 export const navLinks = [

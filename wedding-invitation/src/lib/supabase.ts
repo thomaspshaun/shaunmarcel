@@ -84,6 +84,9 @@ export interface GuestLookupResult {
   plus_one_allowed: boolean;
   rsvp_status: string;
   dietary_notes: string | null;
+  accommodation_name?: string | null;
+  room_nights?: number | null;
+  accommodation_confirmed?: boolean;
 }
 
 export async function findGuestByCode(

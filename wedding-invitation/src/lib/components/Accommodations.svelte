@@ -2,14 +2,7 @@
   import { accommodations } from '$lib/site-config';
   import { guestStore } from '$lib/guestStore';
 
-  let guest = $derived.by(() => {
-    let g: typeof $guestStore.guest | null = null;
-    guestStore.subscribe((s) => {
-      g = s.guest;
-    });
-    return g;
-  });
-
+  let guest = $derived($guestStore.guest);
   let isWeddingParty = $derived(guest?.guest_type === 'wedding_party');
 </script>
 
