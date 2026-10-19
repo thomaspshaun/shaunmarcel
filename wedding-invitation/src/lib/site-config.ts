@@ -144,14 +144,16 @@ export interface Accommodation {
   group: "closest" | "further";
 }
 
-const search = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+const search = (q: string) =>
+  `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 
 export const accommodations: Accommodation[] = [
   {
     id: "vine-guesthouse",
     name: "Vine Guesthouse",
     distance: "5–7 min",
-    description: "A boutique guesthouse in Koelenhof with 12 rooms, and the closest practical option to the venue.",
+    description:
+      "A boutique guesthouse in Koelenhof with 12 rooms, and the closest practical option to the venue.",
     price: "$$",
     // TODO: replace with the official website link.
     url: search("Vine Guesthouse Koelenhof Stellenbosch"),
@@ -161,7 +163,8 @@ export const accommodations: Accommodation[] = [
     id: "groenvlei-guest-farm",
     name: "Groenvlei Guest Farm",
     distance: "7–9 min",
-    description: "A Winelands guest farm with five en-suite guesthouse rooms and self-catering units.",
+    description:
+      "A Winelands guest farm with five en-suite guesthouse rooms and self-catering units.",
     price: "$$",
     url: "https://groenvlei.com",
     group: "closest",
@@ -170,7 +173,8 @@ export const accommodations: Accommodation[] = [
     id: "hazendal-hotel-spa",
     name: "Hazendal Hotel & Spa",
     distance: "8–10 min",
-    description: "A hotel and spa with 34 rooms and suites: our premium hotel option.",
+    description:
+      "A hotel and spa with 34 rooms and suites: our premium hotel option.",
     price: "$$$$",
     url: "https://www.hazendal.co.za/stay/",
     group: "closest",
@@ -179,7 +183,8 @@ export const accommodations: Accommodation[] = [
     id: "devonvale-golf-wine-estate",
     name: "Devonvale Golf & Wine Estate",
     distance: "10–12 min",
-    description: "Hotel rooms, suites and holiday homes, well suited to families and groups.",
+    description:
+      "Hotel rooms, suites and holiday homes, well suited to families and groups.",
     price: "$$$",
     url: "https://devonvale.co.za/accommodation/",
     group: "closest",
@@ -188,7 +193,8 @@ export const accommodations: Accommodation[] = [
     id: "rouana-guest-farm",
     name: "Rouana Guest Farm",
     distance: "12–15 min",
-    description: "A quiet guest farm with around ten rooms and units, sleeping about twenty.",
+    description:
+      "A quiet guest farm with around ten rooms and units, sleeping about twenty.",
     price: "$$",
     url: "https://rouanaguestfarm.com",
     group: "further",
@@ -197,7 +203,8 @@ export const accommodations: Accommodation[] = [
     id: "kunjani-wines",
     name: "Kunjani Wines",
     distance: "13–16 min",
-    description: "Four villas on a wine farm, ideal for groups who would like to stay together.",
+    description:
+      "Four villas on a wine farm, ideal for groups who would like to stay together.",
     price: "$$$",
     url: "https://www.kunjaniwines.co.za",
     group: "further",
@@ -206,7 +213,8 @@ export const accommodations: Accommodation[] = [
     id: "zevenwacht-wine-estate",
     name: "Zevenwacht Wine Estate",
     distance: "15–18 min",
-    description: "Country inn suites, vineyard cottages and a self-catering chalet, good for families and larger groups.",
+    description:
+      "Country inn suites, vineyard cottages and a self-catering chalet, good for families and larger groups.",
     price: "$$$",
     // TODO: replace with the official website link.
     url: search("Zevenwacht Wine Estate accommodation"),
@@ -216,7 +224,8 @@ export const accommodations: Accommodation[] = [
     id: "the-log-collective",
     name: "The Log Collective",
     distance: "18–20 min",
-    description: "Vineyard cabins, villas and an apartment: something a little different.",
+    description:
+      "Vineyard cabins, villas and an apartment: something a little different.",
     price: "$$$",
     url: "https://thelogcollective.co.za",
     group: "further",
@@ -234,7 +243,8 @@ export const accommodations: Accommodation[] = [
     id: "spier-hotel",
     name: "Spier Hotel",
     distance: "22–25 min",
-    description: "A large Winelands hotel with 80 rooms and two villas, plus restaurants and a spa.",
+    description:
+      "A large Winelands hotel with 80 rooms and two villas, plus restaurants and a spa.",
     price: "$$$",
     url: "https://www.spier.co.za",
     group: "further",
