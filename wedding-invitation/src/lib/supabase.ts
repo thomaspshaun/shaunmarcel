@@ -2,7 +2,6 @@
 // Only the public anon key is used here — all sensitive access is enforced
 // server-side via RLS + SECURITY DEFINER RPC functions (see supabase/schema.sql).
 import { createClient } from "@supabase/supabase-js";
-import { compressImage } from "$lib/utils/image";
 import {
   PUBLIC_SUPABASE_URL,
   PUBLIC_SUPABASE_ANON_KEY,
@@ -23,17 +22,9 @@ export interface GuestRecord {
   guest_code: string;
   guest_type: string;
   plus_one_allowed: boolean;
-  partner_first_name: string | null;
-  partner_last_name: string | null;
   rsvp_status: string;
   dietary_notes: string | null;
   invite_sent_at: string | null;
-  accommodation_type: "estate" | "guesthouse" | "own" | null;
-  accommodation_name: string | null;
-  room_nights: number | null;
-  accommodation_confirmed: boolean;
-  friday_supper_status: "pending" | "attending" | "declining";
-  sunday_breakfast_status: "pending" | "attending" | "declining";
 }
 
 export interface RsvpRecord {
@@ -85,13 +76,8 @@ export interface GuestLookupResult {
   last_name: string;
   guest_type: string;
   plus_one_allowed: boolean;
-  partner_first_name?: string | null;
-  partner_last_name?: string | null;
   rsvp_status: string;
   dietary_notes: string | null;
-  accommodation_name?: string | null;
-  room_nights?: number | null;
-  accommodation_confirmed?: boolean;
 }
 
 export async function findGuestByCode(
@@ -209,15 +195,8 @@ export async function postGuestbookComment(
 // Post-wedding guest photo uploads
 // ---------------------------------------------------------------------------
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB per photo (after compression)
-const MAX_ORIGINAL_BYTES = 30 * 1024 * 1024; // reject absurdly large originals
-const ALLOWED_UPLOAD_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-];
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB per photo
+const ALLOWED_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 export async function fetchGuestPhotos(): Promise<GuestPhoto[]> {
   const { data, error } = await supabase
@@ -240,24 +219,14 @@ export async function fetchGuestPhotos(): Promise<GuestPhoto[]> {
 }
 
 export async function uploadGuestPhoto(
-  original: File,
+  file: File,
   uploaderName: string,
   caption: string,
 ): Promise<void> {
-  if (original.size > MAX_ORIGINAL_BYTES) {
-    throw new Error("That photo is too large. Please choose a smaller file.");
-  }
-  const file = await compressImage(original);
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error(
-      "That photo is larger than 8MB. Please choose a smaller file.",
-    );
+    throw new Error("That photo is larger than 8MB. Please choose a smaller file.");
   }
-  if (
-    ALLOWED_UPLOAD_TYPES.length &&
-    file.type &&
-    !ALLOWED_UPLOAD_TYPES.includes(file.type)
-  ) {
+  if (ALLOWED_UPLOAD_TYPES.length && file.type && !ALLOWED_UPLOAD_TYPES.includes(file.type)) {
     throw new Error("Please upload a JPG, PNG, WEBP, or HEIC photo.");
   }
 
@@ -270,12 +239,7 @@ export async function uploadGuestPhoto(
 
   if (uploadError) {
     console.error("uploadGuestPhoto storage error", uploadError);
-    const reason = /bucket not found/i.test(uploadError.message)
-      ? "the photo storage is not set up yet"
-      : /row-level security|policy|not authorized|unauthorized/i.test(uploadError.message)
-        ? "uploads are not permitted yet"
-        : uploadError.message;
-    throw new Error(`Could not upload your photo (${reason}). Please try again.`);
+    throw new Error("Could not upload your photo. Please try again.");
   }
 
   const { error: insertError } = await supabase.from("guest_photos").insert({
@@ -286,8 +250,6 @@ export async function uploadGuestPhoto(
 
   if (insertError) {
     console.error("uploadGuestPhoto insert error", insertError);
-    throw new Error(
-      "Your photo uploaded but could not be saved. Please try again.",
-    );
+    throw new Error("Your photo uploaded but could not be saved. Please try again.");
   }
 }

@@ -22,7 +22,7 @@
 
   <div class="mt-16 sm:mt-20">
     {#each weekend as day, i (day.id)}
-      <article id={day.id === 'saturday' ? 'wedding' : undefined} class="scroll-mt-24" use:reveal>
+      <article id={day.id === 'wedding' ? 'wedding' : undefined} class="scroll-mt-24" use:reveal>
         <header class="text-center">
           <p class="eyebrow">{day.day}</p>
           <p class="mt-1 text-[0.68rem] uppercase tracking-[0.28em] text-muted">{day.date} 2027</p>
@@ -30,7 +30,7 @@
           <p class="lede mx-auto mt-4 max-w-md text-sm sm:text-base">{day.description}</p>
         </header>
 
-        {#if day.id === 'saturday'}
+        {#if day.id === 'wedding'}
           <ol class="mx-auto mt-10 max-w-md border-t border-line/70">
             {#each scheduleEvents as item (item.id)}
               <li class="grid grid-cols-[4.5rem_1fr] items-baseline gap-4 border-b border-line/70 py-4 sm:grid-cols-[6rem_1fr]">

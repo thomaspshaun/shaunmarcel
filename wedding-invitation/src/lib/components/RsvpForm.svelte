@@ -188,7 +188,7 @@
           {#if guest.plus_one_allowed && guestCount > 1}
             <div>
               <label class="block text-sm font-medium text-ink" for="plus-one-name">
-                Plus one's name
+                Plus one's / Partner's name
               </label>
               <input
                 id="plus-one-name"

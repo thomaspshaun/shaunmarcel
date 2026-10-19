@@ -1,4 +1,4 @@
-import { supabase } from '$lib/supabase';
+import { supabase } from "$lib/supabase";
 
 export interface PlannerScheduleItem {
   id: string;
@@ -32,27 +32,36 @@ export interface PlannerVenue {
 // -------------------- Schedule CRUD --------------------
 export async function fetchSchedule(): Promise<PlannerScheduleItem[]> {
   const { data, error } = await supabase
-    .from('planner_schedule')
-    .select('*')
-    .order('sort_order', { ascending: true });
+    .from("planner_schedule")
+    .select("*")
+    .order("sort_order", { ascending: true });
   if (error) {
-    console.error('fetchSchedule error', error);
-    throw new Error('Could not load schedule');
+    console.error("fetchSchedule error", error);
+    throw new Error("Could not load schedule");
   }
   return data as PlannerScheduleItem[];
 }
 
-export async function addScheduleItem(startTs: string, title: string, notes: string | null, section: string = 'Uncategorized', sortOrder = 0) {
+export async function addScheduleItem(
+  startTs: string,
+  title: string,
+  notes: string | null,
+  section: string = "Uncategorized",
+  sortOrder = 0,
+) {
   const { data, error } = await supabase
-    .from('planner_schedule')
+    .from("planner_schedule")
     .insert({ start_ts: startTs, title, notes, section, sort_order: sortOrder })
-    .select('*')
+    .select("*")
     .single();
-  if (error || !data) throw new Error('Could not add schedule item');
+  if (error || !data) throw new Error("Could not add schedule item");
   return data as PlannerScheduleItem;
 }
 
-export async function updateScheduleItem(id: string, patch: Partial<PlannerScheduleItem>) {
+export async function updateScheduleItem(
+  id: string,
+  patch: Partial<PlannerScheduleItem>,
+) {
   const patchToSave: any = {};
   if (patch.title !== undefined) patchToSave.title = patch.title;
   if (patch.notes !== undefined) patchToSave.notes = patch.notes;
@@ -60,38 +69,48 @@ export async function updateScheduleItem(id: string, patch: Partial<PlannerSched
   if (patch.sort_order !== undefined) patchToSave.sort_order = patch.sort_order;
   if (patch.section !== undefined) patchToSave.section = patch.section;
 
-  const { error } = await supabase.from('planner_schedule').update(patchToSave).eq('id', id);
-  if (error) throw new Error('Could not update schedule item');
+  const { error } = await supabase
+    .from("planner_schedule")
+    .update(patchToSave)
+    .eq("id", id);
+  if (error) throw new Error("Could not update schedule item");
 }
 
 export async function deleteScheduleItem(id: string) {
-  const { error } = await supabase.from('planner_schedule').delete().eq('id', id);
-  if (error) throw new Error('Could not delete schedule item');
+  const { error } = await supabase
+    .from("planner_schedule")
+    .delete()
+    .eq("id", id);
+  if (error) throw new Error("Could not delete schedule item");
 }
 
-export async function reorderScheduleItems(items: { id: string; sort_order: number }[]) {
+export async function reorderScheduleItems(
+  items: { id: string; sort_order: number }[],
+) {
   // Batch update sort_order for existing items
   const updates = items.map((item) =>
     supabase
-      .from('planner_schedule')
+      .from("planner_schedule")
       .update({ sort_order: item.sort_order })
-      .eq('id', item.id)
+      .eq("id", item.id),
   );
   const results = await Promise.all(updates);
   const errors = results.filter((r) => r.error);
-  if (errors.length > 0) throw new Error('Could not reorder schedule items');
+  if (errors.length > 0) throw new Error("Could not reorder schedule items");
 }
 
 // Helper: Group schedule items by section with logical ordering
-export function groupScheduleBySection(items: PlannerScheduleItem[]): ScheduleSection[] {
+export function groupScheduleBySection(
+  items: PlannerScheduleItem[],
+): ScheduleSection[] {
   // Define default section order
   const sectionOrder = [
-    'Arrival Plan',
-    'Saturday Morning',
-    'Saturday Afternoon',
-    'Saturday Evening',
-    'Sunday Morning',
-    'Uncategorized'
+    "Arrival Plan",
+    "Saturday Morning",
+    "Saturday Afternoon",
+    "Saturday Evening",
+    "Sunday Morning",
+    "Uncategorized",
   ];
 
   const grouped: { [key: string]: PlannerScheduleItem[] } = {};
@@ -116,29 +135,42 @@ export function groupScheduleBySection(items: PlannerScheduleItem[]): ScheduleSe
     .concat(
       Object.keys(grouped)
         .filter((section) => !sectionOrder.includes(section))
-        .map((name) => ({ name, items: grouped[name] }))
+        .map((name) => ({ name, items: grouped[name] })),
     );
 }
 
 // -------------------- Venue CRUD --------------------
 export async function fetchVenues(): Promise<PlannerVenue[]> {
-  const { data, error } = await supabase.from('planner_venues').select('*').order('created_at', { ascending: true });
-  if (error) throw new Error('Could not load venues');
+  const { data, error } = await supabase
+    .from("planner_venues")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error("Could not load venues");
   return data as PlannerVenue[];
 }
 
 export async function addVenue(name: string): Promise<PlannerVenue> {
-  const { data, error } = await supabase.from('planner_venues').insert({ name }).select('*').single();
-  if (error || !data) throw new Error('Could not add venue');
+  const { data, error } = await supabase
+    .from("planner_venues")
+    .insert({ name })
+    .select("*")
+    .single();
+  if (error || !data) throw new Error("Could not add venue");
   return data as PlannerVenue;
 }
 
-export async function updateVenue(id: string, patch: Partial<PlannerVenue>): Promise<void> {
-  const { error } = await supabase.from('planner_venues').update(patch).eq('id', id);
-  if (error) throw new Error('Could not update venue');
+export async function updateVenue(
+  id: string,
+  patch: Partial<PlannerVenue>,
+): Promise<void> {
+  const { error } = await supabase
+    .from("planner_venues")
+    .update(patch)
+    .eq("id", id);
+  if (error) throw new Error("Could not update venue");
 }
 
 export async function deleteVenue(id: string): Promise<void> {
-  const { error } = await supabase.from('planner_venues').delete().eq('id', id);
-  if (error) throw new Error('Could not delete venue');
+  const { error } = await supabase.from("planner_venues").delete().eq("id", id);
+  if (error) throw new Error("Could not delete venue");
 }
