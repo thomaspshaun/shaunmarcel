@@ -7,7 +7,7 @@
   function openInvitation() {
     if (isOpening) return;
     isOpening = true;
-    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 5800;
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 4300;
     window.setTimeout(() => (isDismissed = true), duration);
   }
 </script>
@@ -22,7 +22,7 @@
       aria-hidden={isOpening}
       tabindex={isOpening ? -1 : 0}
     >
-      <span class="hint">Tap to untie</span>
+      <span class="hint">Tap to open</span>
       <span class="envelope">
         <span class="letter">
           <span class="letter-kicker">Together with their families</span>
@@ -34,15 +34,6 @@
         <span class="envelope-front"></span>
         <span class="engraving" aria-hidden="true">
           <span>{site.names[0].charAt(0)}</span><span class="engraving-ampersand">&</span><span>{site.names[1].charAt(0)}</span>
-        </span>
-        <span class="ribbon ribbon-vertical"></span>
-        <span class="ribbon ribbon-horizontal"></span>
-        <span class="bow" aria-hidden="true">
-          <span class="bow-loop bow-left"></span>
-          <span class="bow-loop bow-right"></span>
-          <span class="bow-knot"></span>
-          <span class="bow-tail bow-tail-left"></span>
-          <span class="bow-tail bow-tail-right"></span>
         </span>
       </span>
     </button>
@@ -66,7 +57,7 @@
   .intro.opening {
     opacity: 0;
     visibility: hidden;
-    transition-delay: 5100ms, 5750ms;
+    transition-delay: 3600ms, 4250ms;
   }
 
   .envelope-button {
@@ -149,9 +140,9 @@
     border: 1px solid var(--color-border);
     box-shadow: 0 5px 18px rgb(68 53 35 / 14%);
     transition:
-      z-index 0ms linear 3500ms,
-      transform 1300ms cubic-bezier(0.22, 0.72, 0.22, 1) 3500ms,
-      box-shadow 900ms ease 3500ms;
+      z-index 0ms linear 1700ms,
+      transform 1400ms cubic-bezier(0.22, 0.72, 0.22, 1) 1700ms,
+      box-shadow 900ms ease 1700ms;
   }
 
   .letter-kicker,
@@ -207,92 +198,8 @@
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transition:
-      transform 1100ms cubic-bezier(0.22, 0.72, 0.22, 1) 2400ms,
-      z-index 0ms linear 2950ms;
-  }
-
-  .ribbon {
-    position: absolute;
-    z-index: 5;
-    display: block;
-    background: var(--color-primary);
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
-    transition:
-      transform 1200ms cubic-bezier(0.22, 0.72, 0.22, 1) 1300ms,
-      opacity 400ms ease 2400ms;
-  }
-
-  .ribbon-vertical {
-    inset: 0 47% 0;
-  }
-
-  .ribbon-horizontal {
-    inset: 47% 0 auto;
-    height: 8%;
-  }
-
-  .bow {
-    position: absolute;
-    z-index: 6;
-    top: 43%;
-    left: 50%;
-    width: clamp(110px, 28vw, 190px);
-    height: clamp(78px, 19vw, 130px);
-    transform: translateX(-50%);
-    transition:
-      transform 1200ms cubic-bezier(0.22, 0.72, 0.22, 1) 200ms,
-      opacity 400ms ease 1450ms;
-  }
-
-  .bow-loop {
-    position: absolute;
-    top: 6%;
-    width: 43%;
-    height: 47%;
-    border: clamp(7px, 1.8vw, 12px) solid var(--color-primary);
-    border-radius: 60% 45% 60% 45%;
-    transition: transform 1000ms cubic-bezier(0.22, 0.72, 0.22, 1) 350ms;
-  }
-
-  .bow-left {
-    left: 3%;
-    transform: rotate(25deg);
-  }
-
-  .bow-right {
-    right: 3%;
-    transform: rotate(-25deg) scaleX(-1);
-  }
-
-  .bow-knot {
-    position: absolute;
-    top: 28%;
-    left: 43%;
-    width: 16%;
-    height: 22%;
-    background: var(--color-primary);
-    border-radius: 50%;
-    transition: transform 850ms cubic-bezier(0.22, 0.72, 0.22, 1) 450ms;
-  }
-
-  .bow-tail {
-    position: absolute;
-    top: 43%;
-    width: 14%;
-    height: 47%;
-    background: var(--color-primary);
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
-    transition: transform 950ms cubic-bezier(0.22, 0.72, 0.22, 1) 450ms;
-  }
-
-  .bow-tail-left {
-    left: 33%;
-    transform: rotate(20deg);
-  }
-
-  .bow-tail-right {
-    right: 33%;
-    transform: rotate(-20deg);
+      transform 1200ms cubic-bezier(0.22, 0.72, 0.22, 1) 500ms,
+      z-index 0ms linear 1050ms;
   }
 
   .engraving {
@@ -328,41 +235,8 @@
     box-shadow: 0 24px 42px rgb(68 53 35 / 22%);
   }
 
-  .opening .ribbon-vertical {
-    transform: translateY(115%);
-  }
-
-  .opening .ribbon-horizontal {
-    transform: translateX(110%);
-  }
-
-  .opening .bow-loop.bow-left {
-    transform: rotate(-42deg) translate(-18px, -16px) scale(0.78);
-  }
-
-  .opening .bow-loop.bow-right {
-    transform: rotate(42deg) translate(18px, -16px) scale(0.78);
-  }
-
-  .opening .bow-tail-left {
-    transform: rotate(65deg) translateY(24px);
-  }
-
-  .opening .bow-tail-right {
-    transform: rotate(-65deg) translateY(24px);
-  }
-
-  .opening .bow,
   .opening .hint {
     opacity: 0;
-  }
-
-  .opening .bow {
-    transform: translate(-50%, -22px) scale(0.9);
-  }
-
-  .opening .bow-knot {
-    transform: scale(0.7);
   }
 
   @keyframes breathe {
@@ -373,10 +247,6 @@
     .intro,
     .letter,
     .envelope-flap,
-    .ribbon,
-    .bow,
-    .bow-loop,
-    .bow-tail,
     .hint {
       transition-duration: 1ms;
       transition-delay: 0ms;
