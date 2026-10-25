@@ -7,7 +7,8 @@
   function openInvitation() {
     if (isOpening) return;
     isOpening = true;
-    window.setTimeout(() => (isDismissed = true), 1450);
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 6600;
+    window.setTimeout(() => (isDismissed = true), duration);
   }
 </script>
 
@@ -41,7 +42,7 @@
           <span class="bow-tail bow-tail-right"></span>
         </span>
       </span>
-      <span class="seal" aria-hidden="true">S <span>&</span> M</span>
+      <span class="seal" aria-hidden="true"><span class="monogram">S<span class="ampersand">&</span>M</span></span>
     </button>
   </div>
 {/if}
@@ -56,21 +57,25 @@
     overflow: hidden;
     background:
       radial-gradient(ellipse at center, rgb(255 255 255 / 82%), transparent 68%),
-      #f5f0e7;
+      var(--color-background-secondary);
     transition: opacity 700ms ease, visibility 700ms ease;
   }
 
   .intro.opening {
     opacity: 0;
     visibility: hidden;
+    transition-delay: 5700ms, 6500ms;
   }
 
   .envelope-button {
-    position: relative;
+    position: absolute;
+    inset: 0;
     display: grid;
-    width: min(86vw, 460px);
+    width: 100%;
+    height: 100%;
     justify-items: center;
-    padding: 3rem 0;
+    align-content: center;
+    padding: 0;
     color: var(--color-text);
     background: transparent;
     border: 0;
@@ -84,6 +89,9 @@
   }
 
   .hint {
+    position: absolute;
+    z-index: 10;
+    top: max(2rem, env(safe-area-inset-top));
     margin-bottom: 1.6rem;
     color: var(--color-text-muted);
     font-size: 0.65rem;
@@ -95,9 +103,9 @@
   .envelope {
     position: relative;
     display: block;
-    width: 100%;
-    aspect-ratio: 1.55;
-    filter: drop-shadow(0 18px 24px rgb(66 49 35 / 15%));
+    width: 100vw;
+    height: 100dvh;
+    filter: drop-shadow(0 0 24px rgb(66 49 35 / 8%));
     perspective: 900px;
   }
 
@@ -109,23 +117,24 @@
   }
 
   .envelope-back {
-    background: #e9dfd0;
-    border: 1px solid #d3c4af;
-    border-radius: 3px;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgb(255 255 255 / 56%), transparent 70%),
+      var(--color-background-secondary);
+    border: 1px solid var(--color-border);
   }
 
   .letter {
     position: absolute;
     z-index: 1;
-    inset: 7% 10% 3%;
+    inset: 8% 8% 7%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.65rem;
-    background: #fffdf8;
-    border: 1px solid #e9dfd0;
-    transition: transform 850ms cubic-bezier(0.2, 0.75, 0.25, 1) 250ms;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    transition: transform 1500ms cubic-bezier(0.2, 0.75, 0.25, 1) 3900ms;
   }
 
   .letter-kicker,
@@ -144,7 +153,7 @@
 
   .envelope-front {
     z-index: 3;
-    background: linear-gradient(145deg, transparent 49.8%, #dfd2c0 50%);
+    background: linear-gradient(145deg, transparent 49.8%, var(--color-border) 50%);
     clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%);
   }
 
@@ -152,7 +161,7 @@
     position: absolute;
     inset: 0;
     content: "";
-    background: linear-gradient(35deg, #eee5d9 50%, transparent 50.4%);
+    background: linear-gradient(35deg, var(--color-background-secondary) 50%, transparent 50.4%);
     clip-path: polygon(0 0, 0 100%, 100% 100%);
   }
 
@@ -160,118 +169,123 @@
     position: absolute;
     inset: 0;
     content: "";
-    background: linear-gradient(-35deg, #e9dfd0 50%, transparent 50.4%);
+    background: linear-gradient(-35deg, var(--color-background-secondary) 50%, transparent 50.4%);
     clip-path: polygon(100% 0, 100% 100%, 0 100%);
   }
 
   .envelope-flap {
     z-index: 4;
-    background: #f0e7db;
+    background: var(--color-background-secondary);
     clip-path: polygon(0 0, 100% 0, 50% 57%);
     transform-origin: top;
-    transition: transform 650ms ease, z-index 0ms 325ms;
+    transition: transform 1300ms cubic-bezier(0.3, 0.7, 0.2, 1) 2900ms, z-index 0ms 3550ms;
   }
 
   .ribbon {
     position: absolute;
     z-index: 5;
     display: block;
-    background: #a96961;
+    background: var(--color-accent);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
-    transition: opacity 300ms ease;
+    transition: opacity 700ms ease 2500ms, transform 1800ms cubic-bezier(0.3, 0, 0.2, 1) 600ms;
   }
 
   .ribbon-vertical {
-    inset: 0 46% 0;
+    inset: 0 47% 0;
   }
 
   .ribbon-horizontal {
-    inset: 42% 0 auto;
-    height: 13%;
+    inset: 47% 0 auto;
+    height: 8%;
   }
 
   .bow {
     position: absolute;
     z-index: 6;
-    top: 28%;
+    top: 43%;
     left: 50%;
-    width: 92px;
-    height: 66px;
+    width: clamp(110px, 28vw, 190px);
+    height: clamp(78px, 19vw, 130px);
     transform: translateX(-50%);
-    transition: transform 400ms ease, opacity 300ms ease;
+    transition: transform 1700ms cubic-bezier(0.3, 0, 0.2, 1) 900ms, opacity 700ms ease 2600ms;
   }
 
   .bow-loop {
     position: absolute;
-    top: 5px;
-    width: 39px;
-    height: 28px;
-    border: 7px solid #a96961;
+    top: 6%;
+    width: 43%;
+    height: 47%;
+    border: clamp(7px, 1.8vw, 12px) solid var(--color-accent);
     border-radius: 60% 45% 60% 45%;
   }
 
   .bow-left {
-    left: 6px;
+    left: 3%;
     transform: rotate(25deg);
   }
 
   .bow-right {
-    right: 6px;
+    right: 3%;
     transform: rotate(-25deg) scaleX(-1);
   }
 
   .bow-knot {
     position: absolute;
-    top: 15px;
-    left: 39px;
-    width: 15px;
-    height: 15px;
-    background: #a96961;
+    top: 28%;
+    left: 43%;
+    width: 16%;
+    height: 22%;
+    background: var(--color-accent);
     border-radius: 50%;
   }
 
   .bow-tail {
     position: absolute;
-    top: 29px;
-    width: 13px;
-    height: 30px;
-    background: #a96961;
+    top: 43%;
+    width: 14%;
+    height: 47%;
+    background: var(--color-accent);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
   }
 
   .bow-tail-left {
-    left: 31px;
+    left: 33%;
     transform: rotate(20deg);
   }
 
   .bow-tail-right {
-    right: 31px;
+    right: 33%;
     transform: rotate(-20deg);
   }
 
   .seal {
     position: absolute;
     z-index: 7;
-    top: 54%;
+    top: 52%;
     left: 50%;
     display: grid;
-    width: 48px;
-    height: 48px;
+    width: clamp(54px, 14vw, 76px);
+    height: clamp(54px, 14vw, 76px);
     place-items: center;
-    color: #fff8ee;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    background: #a96961;
-    border: 2px solid #f1d5c8;
+    color: var(--color-background-secondary);
+    background: var(--color-accent);
+    border: 2px solid var(--color-background-secondary);
     border-radius: 50%;
     box-shadow: 0 2px 6px rgb(60 39 31 / 18%);
     transform: translate(-50%, -50%);
-    transition: opacity 250ms ease, transform 250ms ease;
+    transition: opacity 700ms ease 2500ms, transform 700ms ease 2500ms;
   }
 
-  .seal span {
-    margin: 0 2px;
+  .monogram {
     font-family: var(--font-script);
+    font-size: clamp(1.8rem, 6vw, 2.5rem);
+    line-height: 1;
+  }
+
+  .ampersand {
+    margin: 0 0.12em;
+    font-size: 0.58em;
+    vertical-align: 0.24em;
   }
 
   .opening .envelope-flap {
@@ -280,10 +294,33 @@
   }
 
   .opening .letter {
-    transform: translateY(-72%);
+    transform: translateY(-68%);
   }
 
-  .opening .ribbon,
+  .opening .ribbon-vertical {
+    transform: translateY(115%);
+  }
+
+  .opening .ribbon-horizontal {
+    transform: translateX(110%);
+  }
+
+  .opening .bow-loop.bow-left {
+    transform: rotate(-50deg) translate(-22px, -20px) scale(0.75);
+  }
+
+  .opening .bow-loop.bow-right {
+    transform: rotate(50deg) translate(22px, -20px) scale(0.75);
+  }
+
+  .opening .bow-tail-left {
+    transform: rotate(65deg) translateY(24px);
+  }
+
+  .opening .bow-tail-right {
+    transform: rotate(-65deg) translateY(24px);
+  }
+
   .opening .bow,
   .opening .seal,
   .opening .hint {
@@ -291,7 +328,11 @@
   }
 
   .opening .bow {
-    transform: translate(-50%, -20px) scale(0.8);
+    transform: translate(-50%, -28px) scale(0.85);
+  }
+
+  .opening .seal {
+    transform: translate(-50%, -50%) scale(0.8);
   }
 
   @keyframes breathe {
@@ -304,9 +345,12 @@
     .envelope-flap,
     .ribbon,
     .bow,
+    .bow-loop,
+    .bow-tail,
     .seal,
     .hint {
       transition-duration: 1ms;
+      transition-delay: 0ms;
       animation-duration: 1ms;
       animation-iteration-count: 1;
     }
