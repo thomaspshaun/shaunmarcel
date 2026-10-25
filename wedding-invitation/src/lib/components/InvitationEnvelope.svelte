@@ -22,7 +22,7 @@
       aria-hidden={isOpening}
       tabindex={isOpening ? -1 : 0}
     >
-      <span class="hint">Tap to open</span>
+      <span class="hint">Tap to untie</span>
       <span class="envelope">
         <span class="letter">
           <span class="letter-kicker">Together with their families</span>
@@ -103,9 +103,9 @@
   .envelope {
     position: relative;
     display: block;
-    width: 100vw;
-    height: 100dvh;
-    filter: drop-shadow(0 0 24px rgb(66 49 35 / 8%));
+    width: min(88vw, 620px);
+    aspect-ratio: 7 / 5;
+    filter: drop-shadow(0 22px 32px rgb(66 49 35 / 18%));
     perspective: 900px;
   }
 
@@ -117,16 +117,22 @@
   }
 
   .envelope-back {
+    overflow: hidden;
     background:
-      radial-gradient(ellipse at 50% 45%, rgb(255 255 255 / 56%), transparent 70%),
-      var(--color-background-secondary);
-    border: 1px solid var(--color-border);
+      repeating-linear-gradient(112deg, rgb(92 70 45 / 2%) 0 1px, transparent 1px 4px),
+      radial-gradient(ellipse at 50% 30%, rgb(255 255 255 / 82%), transparent 76%),
+      var(--color-border);
+    border: 1px solid rgb(128 92 55 / 26%);
+    border-radius: 12px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 72%),
+      inset 0 -12px 28px rgb(110 80 48 / 10%);
   }
 
   .letter {
     position: absolute;
     z-index: 1;
-    inset: 8% 8% 7%;
+    inset: 5% 8% -10%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -134,7 +140,10 @@
     gap: 0.65rem;
     background: var(--color-background);
     border: 1px solid var(--color-border);
-    transition: transform 1500ms cubic-bezier(0.2, 0.75, 0.25, 1) 3900ms;
+    box-shadow: 0 5px 18px rgb(68 53 35 / 14%);
+    transition:
+      transform 1500ms cubic-bezier(0.2, 0.75, 0.25, 1) 3900ms,
+      box-shadow 900ms ease 3900ms;
   }
 
   .letter-kicker,
@@ -153,7 +162,9 @@
 
   .envelope-front {
     z-index: 3;
-    background: linear-gradient(145deg, transparent 49.8%, var(--color-border) 50%);
+    background:
+      repeating-linear-gradient(112deg, rgb(92 70 45 / 2%) 0 1px, transparent 1px 4px),
+      linear-gradient(145deg, transparent 49.8%, #d8bd99 50%);
     clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%);
   }
 
@@ -161,7 +172,9 @@
     position: absolute;
     inset: 0;
     content: "";
-    background: linear-gradient(35deg, var(--color-background-secondary) 50%, transparent 50.4%);
+    background:
+      repeating-linear-gradient(112deg, rgb(92 70 45 / 2%) 0 1px, transparent 1px 4px),
+      linear-gradient(35deg, #fff8df 50%, transparent 50.4%);
     clip-path: polygon(0 0, 0 100%, 100% 100%);
   }
 
@@ -169,13 +182,17 @@
     position: absolute;
     inset: 0;
     content: "";
-    background: linear-gradient(-35deg, var(--color-background-secondary) 50%, transparent 50.4%);
+    background:
+      repeating-linear-gradient(112deg, rgb(92 70 45 / 2%) 0 1px, transparent 1px 4px),
+      linear-gradient(-35deg, #f4e8c9 50%, transparent 50.4%);
     clip-path: polygon(100% 0, 100% 100%, 0 100%);
   }
 
   .envelope-flap {
     z-index: 4;
-    background: var(--color-background-secondary);
+    background:
+      repeating-linear-gradient(112deg, rgb(92 70 45 / 2%) 0 1px, transparent 1px 4px),
+      linear-gradient(135deg, #fff9e5, #e8d4b3);
     clip-path: polygon(0 0, 100% 0, 50% 57%);
     transform-origin: top;
     transition: transform 1300ms cubic-bezier(0.3, 0.7, 0.2, 1) 2900ms, z-index 0ms 3550ms;
@@ -185,7 +202,7 @@
     position: absolute;
     z-index: 5;
     display: block;
-    background: var(--color-accent);
+    background: var(--color-primary);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
     transition: opacity 700ms ease 2500ms, transform 1800ms cubic-bezier(0.3, 0, 0.2, 1) 600ms;
   }
@@ -215,7 +232,7 @@
     top: 6%;
     width: 43%;
     height: 47%;
-    border: clamp(7px, 1.8vw, 12px) solid var(--color-accent);
+    border: clamp(7px, 1.8vw, 12px) solid var(--color-primary);
     border-radius: 60% 45% 60% 45%;
   }
 
@@ -235,7 +252,7 @@
     left: 43%;
     width: 16%;
     height: 22%;
-    background: var(--color-accent);
+    background: var(--color-primary);
     border-radius: 50%;
   }
 
@@ -244,7 +261,7 @@
     top: 43%;
     width: 14%;
     height: 47%;
-    background: var(--color-accent);
+    background: var(--color-primary);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
   }
 
@@ -268,7 +285,7 @@
     height: clamp(54px, 14vw, 76px);
     place-items: center;
     color: var(--color-background-secondary);
-    background: var(--color-accent);
+    background: var(--color-primary-dark);
     border: 2px solid var(--color-background-secondary);
     border-radius: 50%;
     box-shadow: 0 2px 6px rgb(60 39 31 / 18%);
@@ -294,7 +311,9 @@
   }
 
   .opening .letter {
-    transform: translateY(-68%);
+    z-index: 30;
+    transform: translateY(-72%);
+    box-shadow: 0 24px 42px rgb(68 53 35 / 22%);
   }
 
   .opening .ribbon-vertical {
