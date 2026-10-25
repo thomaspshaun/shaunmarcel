@@ -80,6 +80,9 @@
     background: transparent;
     border: 0;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -107,6 +110,7 @@
     aspect-ratio: 7 / 5;
     filter: drop-shadow(0 22px 32px rgb(66 49 35 / 18%));
     perspective: 900px;
+    -webkit-perspective: 900px;
   }
 
   .envelope-back,
@@ -117,6 +121,7 @@
   }
 
   .envelope-back {
+    z-index: 1;
     overflow: hidden;
     background:
       repeating-linear-gradient(112deg, rgb(92 70 45 / 2%) 0 1px, transparent 1px 4px),
@@ -131,8 +136,8 @@
 
   .letter {
     position: absolute;
-    z-index: 1;
-    inset: 5% 8% -10%;
+    z-index: 0;
+    inset: 5% 8% 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -142,6 +147,7 @@
     border: 1px solid var(--color-border);
     box-shadow: 0 5px 18px rgb(68 53 35 / 14%);
     transition:
+      z-index 0ms linear 3900ms,
       transform 1500ms cubic-bezier(0.2, 0.75, 0.25, 1) 3900ms,
       box-shadow 900ms ease 3900ms;
   }
@@ -195,6 +201,9 @@
       linear-gradient(135deg, #fff9e5, #e8d4b3);
     clip-path: polygon(0 0, 100% 0, 50% 57%);
     transform-origin: top;
+    -webkit-transform-origin: top;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     transition: transform 1300ms cubic-bezier(0.3, 0.7, 0.2, 1) 2900ms, z-index 0ms 3550ms;
   }
 
@@ -312,7 +321,7 @@
 
   .opening .letter {
     z-index: 30;
-    transform: translateY(-72%);
+    transform: translateY(-105%);
     box-shadow: 0 24px 42px rgb(68 53 35 / 22%);
   }
 
