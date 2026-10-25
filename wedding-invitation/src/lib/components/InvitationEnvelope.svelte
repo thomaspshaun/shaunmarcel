@@ -7,7 +7,7 @@
   function openInvitation() {
     if (isOpening) return;
     isOpening = true;
-    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 6600;
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 5800;
     window.setTimeout(() => (isDismissed = true), duration);
   }
 </script>
@@ -32,6 +32,9 @@
         <span class="envelope-back"></span>
         <span class="envelope-flap"></span>
         <span class="envelope-front"></span>
+        <span class="engraving" aria-hidden="true">
+          <span>{site.names[0].charAt(0)}</span><span class="engraving-ampersand">&</span><span>{site.names[1].charAt(0)}</span>
+        </span>
         <span class="ribbon ribbon-vertical"></span>
         <span class="ribbon ribbon-horizontal"></span>
         <span class="bow" aria-hidden="true">
@@ -42,7 +45,6 @@
           <span class="bow-tail bow-tail-right"></span>
         </span>
       </span>
-      <span class="seal" aria-hidden="true"><span class="monogram">S<span class="ampersand">&</span>M</span></span>
     </button>
   </div>
 {/if}
@@ -64,7 +66,7 @@
   .intro.opening {
     opacity: 0;
     visibility: hidden;
-    transition-delay: 5700ms, 6500ms;
+    transition-delay: 5100ms, 5750ms;
   }
 
   .envelope-button {
@@ -147,9 +149,9 @@
     border: 1px solid var(--color-border);
     box-shadow: 0 5px 18px rgb(68 53 35 / 14%);
     transition:
-      z-index 0ms linear 3900ms,
-      transform 1500ms cubic-bezier(0.2, 0.75, 0.25, 1) 3900ms,
-      box-shadow 900ms ease 3900ms;
+      z-index 0ms linear 3500ms,
+      transform 1300ms cubic-bezier(0.22, 0.72, 0.22, 1) 3500ms,
+      box-shadow 900ms ease 3500ms;
   }
 
   .letter-kicker,
@@ -204,7 +206,9 @@
     -webkit-transform-origin: top;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    transition: transform 1300ms cubic-bezier(0.3, 0.7, 0.2, 1) 2900ms, z-index 0ms 3550ms;
+    transition:
+      transform 1100ms cubic-bezier(0.22, 0.72, 0.22, 1) 2400ms,
+      z-index 0ms linear 2950ms;
   }
 
   .ribbon {
@@ -213,7 +217,9 @@
     display: block;
     background: var(--color-primary);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
-    transition: opacity 700ms ease 2500ms, transform 1800ms cubic-bezier(0.3, 0, 0.2, 1) 600ms;
+    transition:
+      transform 1200ms cubic-bezier(0.22, 0.72, 0.22, 1) 1300ms,
+      opacity 400ms ease 2400ms;
   }
 
   .ribbon-vertical {
@@ -233,7 +239,9 @@
     width: clamp(110px, 28vw, 190px);
     height: clamp(78px, 19vw, 130px);
     transform: translateX(-50%);
-    transition: transform 1700ms cubic-bezier(0.3, 0, 0.2, 1) 900ms, opacity 700ms ease 2600ms;
+    transition:
+      transform 1200ms cubic-bezier(0.22, 0.72, 0.22, 1) 200ms,
+      opacity 400ms ease 1450ms;
   }
 
   .bow-loop {
@@ -243,6 +251,7 @@
     height: 47%;
     border: clamp(7px, 1.8vw, 12px) solid var(--color-primary);
     border-radius: 60% 45% 60% 45%;
+    transition: transform 1000ms cubic-bezier(0.22, 0.72, 0.22, 1) 350ms;
   }
 
   .bow-left {
@@ -263,6 +272,7 @@
     height: 22%;
     background: var(--color-primary);
     border-radius: 50%;
+    transition: transform 850ms cubic-bezier(0.22, 0.72, 0.22, 1) 450ms;
   }
 
   .bow-tail {
@@ -272,6 +282,7 @@
     height: 47%;
     background: var(--color-primary);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+    transition: transform 950ms cubic-bezier(0.22, 0.72, 0.22, 1) 450ms;
   }
 
   .bow-tail-left {
@@ -284,34 +295,26 @@
     transform: rotate(-20deg);
   }
 
-  .seal {
+  .engraving {
     position: absolute;
-    z-index: 7;
-    top: 52%;
-    left: 50%;
-    display: grid;
-    width: clamp(54px, 14vw, 76px);
-    height: clamp(54px, 14vw, 76px);
-    place-items: center;
-    color: var(--color-background-secondary);
-    background: var(--color-primary-dark);
-    border: 2px solid var(--color-background-secondary);
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgb(60 39 31 / 18%);
-    transform: translate(-50%, -50%);
-    transition: opacity 700ms ease 2500ms, transform 700ms ease 2500ms;
-  }
-
-  .monogram {
-    font-family: var(--font-script);
-    font-size: clamp(1.8rem, 6vw, 2.5rem);
+    z-index: 4;
+    bottom: 10%;
+    left: 12%;
+    color: rgb(166 124 82 / 82%);
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 3vw, 1.65rem);
+    font-style: italic;
+    letter-spacing: -0.08em;
     line-height: 1;
+    text-shadow:
+      0 1px 0 rgb(255 255 255 / 78%),
+      0 -1px 0 rgb(95 68 42 / 24%);
   }
 
-  .ampersand {
-    margin: 0 0.12em;
-    font-size: 0.58em;
-    vertical-align: 0.24em;
+  .engraving-ampersand {
+    margin: 0 0.08em;
+    font-size: 0.62em;
+    vertical-align: 0.16em;
   }
 
   .opening .envelope-flap {
@@ -321,7 +324,7 @@
 
   .opening .letter {
     z-index: 30;
-    transform: translateY(-105%);
+    transform: translateY(-102%);
     box-shadow: 0 24px 42px rgb(68 53 35 / 22%);
   }
 
@@ -334,11 +337,11 @@
   }
 
   .opening .bow-loop.bow-left {
-    transform: rotate(-50deg) translate(-22px, -20px) scale(0.75);
+    transform: rotate(-42deg) translate(-18px, -16px) scale(0.78);
   }
 
   .opening .bow-loop.bow-right {
-    transform: rotate(50deg) translate(22px, -20px) scale(0.75);
+    transform: rotate(42deg) translate(18px, -16px) scale(0.78);
   }
 
   .opening .bow-tail-left {
@@ -350,17 +353,16 @@
   }
 
   .opening .bow,
-  .opening .seal,
   .opening .hint {
     opacity: 0;
   }
 
   .opening .bow {
-    transform: translate(-50%, -28px) scale(0.85);
+    transform: translate(-50%, -22px) scale(0.9);
   }
 
-  .opening .seal {
-    transform: translate(-50%, -50%) scale(0.8);
+  .opening .bow-knot {
+    transform: scale(0.7);
   }
 
   @keyframes breathe {
@@ -375,7 +377,6 @@
     .bow,
     .bow-loop,
     .bow-tail,
-    .seal,
     .hint {
       transition-duration: 1ms;
       transition-delay: 0ms;
