@@ -13,6 +13,7 @@
   import GuestHeader from '$lib/components/GuestHeader.svelte'; // Hidden for now
   import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
+  import InvitationEnvelope from '$lib/components/InvitationEnvelope.svelte';
   import { site } from '$lib/site-config';
   import { guestStore } from '$lib/guestStore';
   import { findGuestByCode } from '$lib/supabase';
@@ -36,6 +37,8 @@
 </svelte:head>
 
 <!-- GuestHeader hidden for now -->
+
+<InvitationEnvelope />
 
 <Hero>
   {#snippet action()}
