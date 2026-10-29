@@ -114,7 +114,7 @@
     font-family: "Parisienne", "Brush Script MT", cursive;
     font-size: clamp(3.4rem, 11vw, 8rem);
     line-height: 0.94;
-    -webkit-text-stroke: 0.65px #77736f;
+    -webkit-text-stroke: 1.1px #68635f;
     paint-order: stroke fill;
     text-shadow: 0 2px 8px rgb(0 0 0 / 55%);
     animation-delay: 350ms;
@@ -131,7 +131,7 @@
     font-weight: 500;
     letter-spacing: 0.025em;
     line-height: 1;
-    -webkit-text-stroke: 0.45px #77736f;
+    -webkit-text-stroke: 0.9px #68635f;
     paint-order: stroke fill;
     text-shadow: 0 2px 8px rgb(0 0 0 / 75%);
     animation-delay: 850ms;
@@ -152,7 +152,7 @@
     justify-content: center;
     gap: clamp(0.6rem, 3.2vw, 2rem);
     font-family: "Cormorant Garamond", Georgia, serif;
-    -webkit-text-stroke: 0.3px #77736f;
+    -webkit-text-stroke: 0.65px #68635f;
     paint-order: stroke fill;
     text-shadow: 0 2px 8px rgb(0 0 0 / 80%);
     animation-delay: 1.25s;
@@ -184,6 +184,8 @@
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: clamp(0.95rem, 3vw, 1.25rem);
     letter-spacing: 0.12em;
+    -webkit-text-stroke: 0.55px #68635f;
+    paint-order: stroke fill;
     text-shadow: 0 1px 5px rgb(0 0 0 / 85%);
     animation-delay: 1.45s;
   }
