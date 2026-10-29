@@ -36,12 +36,13 @@
 
 <style>
   .save-date {
-    position: relative;
+    position: fixed;
+    inset: 0;
     display: grid;
     width: 100%;
     height: 100vh;
-    height: 100svh;
-    min-height: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
     overflow: hidden;
     place-items: center;
     isolation: isolate;
@@ -119,7 +120,7 @@
 
   .couple {
     position: absolute;
-    top: 76%;
+    top: calc(35% + clamp(3.4rem, 11vw, 8rem) * 0.94 + 0.8rem);
     left: 0;
     width: 100%;
     color: #fffdf9;
@@ -209,6 +210,7 @@
       width: auto;
       max-width: 100%;
       margin: auto;
+      height: 100%;
       object-fit: contain;
       filter: contrast(1.04) saturate(1.04);
     }
@@ -217,9 +219,6 @@
       top: 35%;
     }
 
-    .couple {
-      top: 76%;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
