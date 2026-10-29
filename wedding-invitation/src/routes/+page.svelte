@@ -6,7 +6,7 @@
   <title>Save the Date — Shaun &amp; Marcel</title>
   <meta name="description" content="Save the date: Shaun and Marcel, 1 April 2027." />
   <meta property="og:title" content="Save the Date — Shaun &amp; Marcel" />
-  <meta property="og:description" content="Thursday, 1 April 2027" />
+  <meta property="og:description" content="1 April 2027" />
   <meta property="og:image" content={photo} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
@@ -25,7 +25,7 @@
     <p class="save-title">Save the Date</p>
     <h1 class="couple">Shaun <span>&amp;</span> Marcel</h1>
     <div class="details">
-      <p class="date"><span>Thursday</span><strong>1</strong><span>April 2027</span></p>
+      <p class="date"><strong>1</strong><span>April 2027</span></p>
       <p class="location">Cape Town</p>
       <footer class="contact">
         Questions in the meantime? Reach us at
