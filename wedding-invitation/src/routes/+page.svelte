@@ -88,11 +88,7 @@
   .card {
     position: absolute;
     inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 34vh 1rem max(3.2vh, env(safe-area-inset-bottom));
+    padding: 0 1rem;
     text-align: center;
     pointer-events: none;
   }
@@ -107,6 +103,10 @@
   }
 
   .save-title {
+    position: absolute;
+    top: 35%;
+    left: 0;
+    width: 100%;
     color: #fffdf9;
     font-family: "Parisienne", "Brush Script MT", cursive;
     font-size: clamp(3.4rem, 11vw, 8rem);
@@ -118,6 +118,10 @@
   }
 
   .couple {
+    position: absolute;
+    top: 76%;
+    left: 0;
+    width: 100%;
     color: #fffdf9;
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: clamp(2.15rem, 7.2vw, 5rem);
@@ -136,6 +140,10 @@
   }
 
   .date {
+    position: absolute;
+    right: 0;
+    bottom: max(8%, calc(env(safe-area-inset-bottom) + 4.5rem));
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -154,18 +162,21 @@
 
   .date strong {
     color: #fffdf9;
-    font-size: clamp(3.8rem, 12vw, 6.5rem);
-    font-weight: 500;
-    line-height: 0.8;
+    font-size: clamp(1rem, 3.5vw, 1.8rem);
+    font-variant-numeric: lining-nums;
+    font-weight: 600;
+    line-height: 1;
   }
 
   .details {
-    display: grid;
-    justify-items: center;
-    gap: clamp(0.9rem, 2.5vh, 1.5rem);
+    display: contents;
   }
 
   .contact {
+    position: absolute;
+    right: 1rem;
+    bottom: max(1.5%, env(safe-area-inset-bottom));
+    left: 1rem;
     color: #fffdf9;
     font-family: Arial, Helvetica, sans-serif;
     font-size: clamp(0.72rem, 2.5vw, 0.95rem);
@@ -202,8 +213,12 @@
       filter: contrast(1.04) saturate(1.04);
     }
 
-    .card {
-      padding-top: 37vh;
+    .save-title {
+      top: 35%;
+    }
+
+    .couple {
+      top: 76%;
     }
   }
 
