@@ -26,6 +26,7 @@
     <h1 class="couple">Shaun <span>&amp;</span> Marcel</h1>
     <div class="details">
       <p class="date"><span>Thursday</span><strong>1</strong><span>April 2027</span></p>
+      <p class="location">Cape Town</p>
       <footer class="contact">
         Questions in the meantime? Reach us at
         <a href="tel:+27836338108">083 633 8108</a>
@@ -97,6 +98,7 @@
   .save-title,
   .couple,
   .date,
+  .location,
   .contact {
     margin: 0;
     opacity: 0;
@@ -173,6 +175,19 @@
     display: contents;
   }
 
+  .location {
+    position: absolute;
+    right: 0;
+    bottom: calc(max(1.5%, env(safe-area-inset-bottom)) + 1.7rem);
+    left: 0;
+    color: #fffdf9;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(0.95rem, 3vw, 1.25rem);
+    letter-spacing: 0.12em;
+    text-shadow: 0 1px 5px rgb(0 0 0 / 85%);
+    animation-delay: 1.45s;
+  }
+
   .contact {
     position: absolute;
     right: 1rem;
@@ -225,6 +240,7 @@
     .save-title,
     .couple,
     .date,
+    .location,
     .contact {
       opacity: 1;
       animation: none;
