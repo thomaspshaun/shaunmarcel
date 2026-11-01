@@ -40,8 +40,8 @@
         <dd class="text-ink">{status}</dd>
       </div>
       <div class="flex justify-between gap-6 border-b border-line py-4">
-        <dt class="text-muted">Plus one</dt>
-        <dd class="text-ink">{guest.plus_one_allowed ? 'Included' : 'Not included'}</dd>
+        <dt class="text-muted">People invited</dt>
+        <dd class="text-ink">{guest.guest_allowance} {guest.guest_allowance === 1 ? 'person' : 'people'}</dd>
       </div>
       {#if guest.dietary_notes}
         <div class="flex justify-between gap-6 border-b border-line py-4">

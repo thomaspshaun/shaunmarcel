@@ -21,7 +21,15 @@ export interface GuestRecord {
   whatsapp_number: string | null;
   guest_code: string;
   guest_type: string;
-  plus_one_allowed: boolean;
+  guest_allowance: number;
+  partner_first_name?: string | null;
+  partner_last_name?: string | null;
+  accommodation_type?: "estate" | "guesthouse" | "own" | null;
+  accommodation_name?: string | null;
+  room_nights?: number | null;
+  accommodation_confirmed?: boolean;
+  friday_supper_status?: string;
+  sunday_breakfast_status?: string;
   rsvp_status: string;
   dietary_notes: string | null;
   invite_sent_at: string | null;
@@ -75,9 +83,14 @@ export interface GuestLookupResult {
   first_name: string;
   last_name: string;
   guest_type: string;
-  plus_one_allowed: boolean;
+  guest_allowance: number;
+  partner_first_name: string | null;
+  partner_last_name: string | null;
   rsvp_status: string;
   dietary_notes: string | null;
+  accommodation_name: string | null;
+  room_nights: number | null;
+  accommodation_confirmed: boolean;
 }
 
 export async function findGuestByCode(

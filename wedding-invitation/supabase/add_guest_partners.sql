@@ -24,7 +24,7 @@ RETURNS TABLE (
   first_name TEXT,
   last_name TEXT,
   guest_type TEXT,
-  plus_one_allowed BOOLEAN,
+  guest_allowance INTEGER,
   partner_first_name TEXT,
   partner_last_name TEXT,
   rsvp_status TEXT,
@@ -38,7 +38,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT g.id, g.first_name, g.last_name, g.guest_type,
-         (g.plus_one_allowed OR NULLIF(trim(g.partner_first_name), '') IS NOT NULL),
+         GREATEST(g.guest_allowance, CASE WHEN NULLIF(trim(g.partner_first_name), '') IS NOT NULL THEN 2 ELSE 1 END),
          NULLIF(trim(g.partner_first_name), ''), NULLIF(trim(g.partner_last_name), ''),
          g.rsvp_status, g.dietary_notes,
          g.accommodation_name, g.room_nights, g.accommodation_confirmed

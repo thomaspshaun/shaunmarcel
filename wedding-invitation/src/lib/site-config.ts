@@ -20,6 +20,12 @@ export const site = {
   socialImagePath: "/favicon.svg",
 };
 
+export const rsvpDeadlines = {
+  vip: "30 November",
+  standard: "31 December",
+  extra: "31 January",
+} as const;
+
 export const registry = {
   yuppiechefUrl: "https://yuppiechef.com/yc9904838",
   title: "Honeymoon Fund",

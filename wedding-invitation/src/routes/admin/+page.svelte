@@ -42,7 +42,7 @@
   let newLastName = $state('');
   let newWhatsapp = $state('');
   let newGuestType = $state('standard');
-  let newPlusOneAllowed = $state(false);
+  let newGuestAllowance = $state(1);
   let addingGuest = $state(false);
   let addGuestError = $state('');
 
@@ -270,7 +270,7 @@
       last_name: newLastName.trim(),
       whatsapp_number: newWhatsapp.trim() || null,
       guest_type: newGuestType,
-      plus_one_allowed: newPlusOneAllowed,
+      guest_allowance: Math.max(newGuestAllowance, 1),
       guest_code: generateGuestCode()
     });
 
@@ -281,7 +281,7 @@
       newLastName = '';
       newWhatsapp = '';
       newGuestType = 'standard';
-      newPlusOneAllowed = false;
+      newGuestAllowance = 1;
       await loadGuests();
     }
     addingGuest = false;
@@ -423,10 +423,11 @@
           <option value="vip">VIP</option>
           <option value="family">Family</option>
           <option value="wedding_party">Wedding Party</option>
+          <option value="extra">Extra</option>
         </select>
-        <label class="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" bind:checked={newPlusOneAllowed} class="h-4 w-4 rounded border-slate-300" />
-          Plus-one allowed
+        <label class="flex flex-col gap-1 text-sm text-slate-700">
+          People invited (including guest)
+          <input type="number" min="1" step="1" bind:value={newGuestAllowance} required class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900" />
         </label>
 
         <div class="sm:col-span-2 lg:col-span-5">

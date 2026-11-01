@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Sprig from '$lib/components/Sprig.svelte';
-  import { site } from '$lib/site-config';
+  import { rsvpDeadlines, site } from '$lib/site-config';
   import { findGuestByCode, submitRsvp, type GuestLookupResult } from '$lib/supabase';
 
   type Step = 'lookup' | 'form' | 'success';
@@ -11,7 +11,17 @@
   let lookupLoading = $state(false);
   let lookupError = $state('');
 
-  let guest: GuestLookupResult | null = $state(null);
+  let guest = $state<GuestLookupResult | null>(null);
+  let guestType = $derived(guest?.guest_type ?? '');
+  let rsvpDeadline = $derived(
+    guestType === 'vip'
+      ? rsvpDeadlines.vip
+      : guestType === 'standard'
+        ? rsvpDeadlines.standard
+        : guestType === 'extra'
+          ? rsvpDeadlines.extra
+          : site.rsvpDeadlineLabel
+  );
 
   let attending = $state(true);
   let guestCount = $state(1);
@@ -49,9 +59,11 @@
 
       guest = result;
       dietaryRequirements = result.dietary_notes ?? '';
+      guestCount = 1;
+      plusOneName = '';
       // A partner added by the admin is the plus-one by default.
-      if (result.partner_first_name) {
-        guestCount = 2;
+      if (result.partner_first_name && result.guest_allowance > 1) {
+        guestCount = Math.min(2, result.guest_allowance);
         plusOneName = [result.partner_first_name, result.partner_last_name].filter(Boolean).join(' ');
       }
       step = 'form';
@@ -145,6 +157,11 @@
         <p class="text-lg font-medium text-ink">
           Hi {guest.first_name}! We're so glad to hear from you.
         </p>
+        {#if rsvpDeadline}
+          <p class="border-y border-line py-4 text-sm leading-6 text-muted">
+            Please respond by <strong class="font-semibold text-ink">{rsvpDeadline}</strong>. A response before this date will help us ensure everyone is catered for accordingly.
+          </p>
+        {/if}
 
         <fieldset class="space-y-2">
           <legend class="text-sm font-medium text-ink">Will you be attending?</legend>
@@ -173,19 +190,19 @@
         {#if attending}
           <div>
             <label class="block text-sm font-medium text-ink" for="guest-count">
-              Number attending{guest.plus_one_allowed ? ' (including plus one)' : ''}
+              Number attending (up to {guest.guest_allowance} {guest.guest_allowance === 1 ? 'person' : 'people'})
             </label>
             <input
               id="guest-count"
               type="number"
               min="1"
-              max={guest.plus_one_allowed ? 2 : 1}
+              max={guest.guest_allowance}
               bind:value={guestCount}
               class="mt-2 w-full rounded-none border border-line px-4 py-3 text-base text-ink focus:border-sage focus:outline-none"
             />
           </div>
 
-          {#if guest.plus_one_allowed && guestCount > 1}
+          {#if guest.guest_allowance > 1 && guestCount > 1}
             <div>
               <label class="block text-sm font-medium text-ink" for="plus-one-name">
                 Plus one's / Partner's name

@@ -2,6 +2,7 @@
   import AddToCalendar from '$lib/components/AddToCalendar.svelte';
   import Sprig from '$lib/components/Sprig.svelte';
   import { reveal } from '$lib/actions/reveal';
+  import { guestStore } from '$lib/guestStore';
   import { scheduleEvents, weekend, venue } from '$lib/site-config';
   import type { CalendarEvent } from '$lib/utils/calendar';
 
@@ -12,16 +13,34 @@
     start: new Date(scheduleEvents[0].startIso),
     end: new Date(scheduleEvents[scheduleEvents.length - 1].endIso)
   };
+  let guest = $derived($guestStore.guest);
+  let guestType = $derived(guest?.guest_type ?? '');
+  let visibleWeekend = $derived(
+    guestType === 'family'
+      ? weekend.map((day) =>
+          day.id === 'arrival'
+            ? {
+                ...day,
+                title: 'Check-in & Settle In',
+                description: `Check-in at ${venue.name} from 3:00 pm on 31 March. A light meal will be provided.`,
+                note: ''
+              }
+            : day
+        )
+      : ['vip', 'standard', 'extra'].includes(guestType)
+        ? weekend.filter((day) => day.id === 'wedding')
+        : weekend
+  );
 </script>
 
 <section id="weekend" class="mx-auto max-w-3xl px-6 py-24 sm:py-32">
   <div class="text-center" use:reveal>
     <p class="eyebrow">The Programme</p>
-    <h2 class="heading mt-4">Our Weekend</h2>
+    <h2 class="heading mt-4">{visibleWeekend.length === 1 ? 'Our Wedding Day' : 'Our Weekend'}</h2>
   </div>
 
   <div class="mt-16 sm:mt-20">
-    {#each weekend as day, i (day.id)}
+    {#each visibleWeekend as day, i (day.id)}
       <article id={day.id === 'wedding' ? 'wedding' : undefined} class="scroll-mt-24" use:reveal>
         <header class="text-center">
           <p class="eyebrow">{day.day}</p>
@@ -47,7 +66,7 @@
         {/if}
       </article>
 
-      {#if i < weekend.length - 1}
+      {#if i < visibleWeekend.length - 1}
         <Sprig class="mx-auto my-16 h-5 w-32 text-champagne sm:my-20" />
       {/if}
     {/each}

@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS guests (
   phone TEXT,
   whatsapp_number TEXT,
   guest_code TEXT UNIQUE,
-  guest_type TEXT NOT NULL DEFAULT 'standard' CHECK (guest_type IN ('standard', 'vip', 'family', 'wedding_party')),
-  plus_one_allowed BOOLEAN NOT NULL DEFAULT false,
+  guest_type TEXT NOT NULL DEFAULT 'standard' CHECK (guest_type IN ('standard', 'vip', 'family', 'wedding_party', 'extra')),
+  guest_allowance INTEGER NOT NULL DEFAULT 1 CHECK (guest_allowance >= 1),
   rsvp_status TEXT DEFAULT 'pending' CHECK (rsvp_status IN ('pending', 'attending', 'declining', 'notified')),
   dietary_notes TEXT,
   invite_sent_at TIMESTAMPTZ,
@@ -15,9 +15,35 @@ CREATE TABLE IF NOT EXISTS guests (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE guests DROP CONSTRAINT IF EXISTS guests_guest_type_check;
+ALTER TABLE guests ADD CONSTRAINT guests_guest_type_check
+  CHECK (guest_type IN ('standard', 'vip', 'family', 'wedding_party', 'extra'));
+
 -- Safe to re-run on an existing database that was created before these columns existed.
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS invite_sent_at TIMESTAMPTZ;
+ALTER TABLE guests ADD COLUMN IF NOT EXISTS guest_allowance INTEGER;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'guests' AND column_name = 'plus_one_allowed'
+  ) THEN
+    EXECUTE 'UPDATE guests SET guest_allowance = CASE WHEN plus_one_allowed THEN 2 ELSE 1 END WHERE guest_allowance IS NULL';
+  ELSE
+    UPDATE guests SET guest_allowance = 1 WHERE guest_allowance IS NULL;
+  END IF;
+END;
+$$;
+ALTER TABLE guests ALTER COLUMN guest_allowance SET DEFAULT 1;
+ALTER TABLE guests ALTER COLUMN guest_allowance SET NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'guests_guest_allowance_positive') THEN
+    ALTER TABLE guests ADD CONSTRAINT guests_guest_allowance_positive CHECK (guest_allowance >= 1);
+  END IF;
+END;
+$$;
 
 -- Wedding weekend planner: accommodation tracking + attendance for the
 -- Friday welcome supper and Sunday farewell breakfast (separate from the
@@ -33,6 +59,8 @@ ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NUL
 -- gets a plus-one and the invitation greets "Guest & Partner".
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_first_name TEXT;
 ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_last_name TEXT;
+UPDATE guests SET guest_allowance = GREATEST(guest_allowance, 2)
+WHERE NULLIF(trim(partner_first_name), '') IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -263,11 +291,27 @@ CREATE POLICY "Admin can delete guest photos" ON guest_photos
 -- RPC: find_guest_by_code
 -- ---------------------------------------------------------------------------
 
- param($t)
- $t=Rep $t "ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));`n" ("ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));`n`n"+$rpc+"`n")
- $s=$t.IndexOf("-- Looks up a single guest by their unique invite code.")
- $e=$t.IndexOf("GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;")+"GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;".Length
- $t.Substring(0,$s)+$fn+$t.Substring($e)
+-- The browser can look up only the invitation associated with a code.
+DROP FUNCTION IF EXISTS find_guest_by_code(TEXT);
+CREATE OR REPLACE FUNCTION find_guest_by_code(p_code TEXT)
+RETURNS TABLE (
+  id UUID, first_name TEXT, last_name TEXT, guest_type TEXT,
+  guest_allowance INTEGER, partner_first_name TEXT, partner_last_name TEXT,
+  rsvp_status TEXT, dietary_notes TEXT, accommodation_name TEXT,
+  room_nights INTEGER, accommodation_confirmed BOOLEAN
+)
+LANGUAGE sql SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT g.id, g.first_name, g.last_name, g.guest_type, g.guest_allowance,
+         NULLIF(trim(g.partner_first_name), ''), NULLIF(trim(g.partner_last_name), ''),
+         g.rsvp_status, g.dietary_notes, g.accommodation_name, g.room_nights,
+         g.accommodation_confirmed
+  FROM guests g
+  WHERE g.guest_code = upper(trim(p_code))
+  LIMIT 1;
+$$;
+REVOKE ALL ON FUNCTION find_guest_by_code(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;
 
 
 -- ---------------------------------------------------------------------------
@@ -291,13 +335,19 @@ SET search_path = public
 AS $$
 DECLARE
   v_guest_id UUID;
+  v_guest_allowance INTEGER;
 BEGIN
-  SELECT id INTO v_guest_id
+  SELECT id, guest_allowance INTO v_guest_id, v_guest_allowance
   FROM guests
   WHERE guest_code = upper(trim(p_guest_code));
 
   IF v_guest_id IS NULL THEN
     RETURN QUERY SELECT false, 'Guest not found';
+    RETURN;
+  END IF;
+
+  IF p_attending AND (p_guest_count IS NULL OR p_guest_count < 1 OR p_guest_count > v_guest_allowance) THEN
+    RETURN QUERY SELECT false, 'Attendance count exceeds the invitation allowance';
     RETURN;
   END IF;
 

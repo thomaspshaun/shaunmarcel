@@ -13,7 +13,24 @@
 </script>
 
 <section id="accommodation" class="mx-auto max-w-4xl px-6 py-24 sm:py-32">
-  {#if profile?.weddingParty}
+  {#if guest?.guest_type === 'family'}
+    <div class="text-center" use:reveal>
+      <p class="eyebrow">Your Accommodation</p>
+      <h2 class="heading mt-4">Staying at {venue.name}</h2>
+      <p class="lede mx-auto mt-6 max-w-lg">
+        Accommodation is arranged for your family at the venue. Check-in is from 3:00 pm on 31 March,
+        and a light meal will be provided.
+      </p>
+    </div>
+    {#if guest?.accommodation_name}
+      <dl class="mx-auto mt-12 max-w-sm border-y border-line text-sm">
+        <div class="flex justify-between gap-6 py-4">
+          <dt class="text-muted">Accommodation</dt>
+          <dd class="text-right text-ink">{guest.accommodation_name}</dd>
+        </div>
+      </dl>
+    {/if}
+  {:else if profile?.weddingParty}
     <div class="text-center" use:reveal>
       <p class="eyebrow">Your Accommodation</p>
       <h2 class="heading mt-4">Arranged for you at {venue.name}</h2>

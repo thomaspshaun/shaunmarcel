@@ -15,7 +15,7 @@
   let newPartnerLastName = $state('');
   let newWhatsapp = $state('');
   let newGuestType = $state('standard');
-  let newPlusOneAllowed = $state(false);
+  let newGuestAllowance = $state(1);
   let addingGuest = $state(false);
   let addGuestError = $state('');
 
@@ -64,7 +64,7 @@
       partner_last_name: partnerFirst ? newPartnerLastName.trim() || null : null,
       whatsapp_number: newWhatsapp.trim() || null,
       guest_type: newGuestType,
-      plus_one_allowed: newPlusOneAllowed || !!partnerFirst,
+      guest_allowance: Math.max(newGuestAllowance, partnerFirst ? 2 : 1),
       guest_code: generateGuestCode()
     });
 
@@ -77,7 +77,7 @@
       newPartnerLastName = '';
       newWhatsapp = '';
       newGuestType = 'standard';
-      newPlusOneAllowed = false;
+      newGuestAllowance = 1;
       await loadGuests();
     }
     addingGuest = false;
@@ -99,7 +99,7 @@
     await updateGuestField(guest, {
       partner_first_name: partnerFirst,
       partner_last_name: partnerFirst ? last.trim() || null : null,
-      ...(partnerFirst ? { plus_one_allowed: true } : {})
+      ...(partnerFirst ? { guest_allowance: Math.max(guest.guest_allowance, 2) } : {})
     });
   }
 
@@ -160,10 +160,11 @@
       <option value="vip">VIP</option>
       <option value="family">Family</option>
       <option value="wedding_party">Wedding Party</option>
+      <option value="extra">Extra</option>
     </select>
-    <label class="flex items-center gap-2 text-sm text-slate-700">
-      <input type="checkbox" bind:checked={newPlusOneAllowed} class="h-4 w-4 rounded border-slate-300" />
-      Plus-one allowed (automatic with a partner)
+    <label class="flex flex-col gap-1 text-sm text-slate-700">
+      People invited (including guest)
+      <input type="number" min="1" step="1" bind:value={newGuestAllowance} required class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900" />
     </label>
 
     <div class="sm:col-span-2 lg:col-span-4">
@@ -205,6 +206,7 @@
             <th class="px-4 py-3">Partner</th>
             <th class="px-4 py-3">Code</th>
             <th class="px-4 py-3">Type</th>
+            <th class="px-4 py-3">People invited</th>
             <th class="px-4 py-3">Wedding RSVP</th>
             <th class="px-4 py-3">Invite Sent</th>
             <th class="px-4 py-3">WhatsApp</th>
@@ -235,6 +237,24 @@
               </td>
               <td class="px-4 py-3 font-mono text-xs text-slate-600">{guest.guest_code}</td>
               <td class="px-4 py-3 text-slate-600 capitalize">{guest.guest_type.replace('_', ' ')}</td>
+              <td class="px-4 py-3">
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  aria-label="People invited including {guest.first_name}"
+                  value={guest.guest_allowance}
+                  onblur={(e) => {
+                    const allowance = Number(e.currentTarget.value);
+                    if (Number.isInteger(allowance) && allowance >= 1) {
+                      updateGuestField(guest, { guest_allowance: Math.max(allowance, guest.partner_first_name ? 2 : 1) });
+                    } else {
+                      e.currentTarget.value = String(guest.guest_allowance);
+                    }
+                  }}
+                  class="w-16 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-rose-400 focus:outline-none"
+                />
+              </td>
               <td class="px-4 py-3">
                 <span class="rounded-full px-2.5 py-1 text-xs font-medium {rsvpBadgeClass(guest.rsvp_status ?? 'pending')}">
                   {guest.rsvp_status}
