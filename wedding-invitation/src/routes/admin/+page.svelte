@@ -12,8 +12,12 @@
 
   let email = $state('');
   let password = $state('');
+  let newPassword = $state('');
+  let authMode = $state<'signIn' | 'requestReset' | 'setPassword'>('signIn');
   let authError = $state('');
+  let authMessage = $state('');
   let signingIn = $state(false);
+  let resettingPassword = $state(false);
 
   let guests: GuestRecord[] = $state([]);
   let guestsLoading = $state(false);
@@ -78,8 +82,14 @@
       }
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       session = newSession;
+      if (event === 'PASSWORD_RECOVERY') {
+        authMode = 'setPassword';
+        authError = '';
+        authMessage = '';
+        return;
+      }
       if (newSession) {
         loadGuests();
         loadRsvps();
@@ -101,6 +111,52 @@
       authError = error.message;
     }
     signingIn = false;
+  }
+
+  async function handlePasswordReset(e: Event) {
+    e.preventDefault();
+    resettingPassword = true;
+    authError = '';
+    authMessage = '';
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/admin`
+      });
+
+      if (error) {
+        authError = error.message;
+      } else {
+        authMessage = 'If an account exists for that email, a password reset link has been sent.';
+      }
+    } catch (error) {
+      authError = error instanceof Error ? error.message : 'Could not request a password reset.';
+    } finally {
+      resettingPassword = false;
+    }
+  }
+
+  async function handleSetNewPassword(e: Event) {
+    e.preventDefault();
+    resettingPassword = true;
+    authError = '';
+    authMessage = '';
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        authError = error.message;
+      } else {
+        authMode = 'signIn';
+        newPassword = '';
+        password = '';
+        authMessage = 'Your password has been updated.';
+      }
+    } catch (error) {
+      authError = error instanceof Error ? error.message : 'Could not update your password.';
+    } finally {
+      resettingPassword = false;
+    }
   }
 
   async function handleSignOut() {
@@ -315,41 +371,120 @@
 <div class="mx-auto max-w-5xl px-6 py-16">
   {#if authLoading}
     <p class="text-center text-slate-500">Loading...</p>
-  {:else if !session}
+  {:else if authMode === 'setPassword'}
     <div class="mx-auto max-w-sm rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <h1 class="text-xl font-medium text-slate-900">Admin Sign In</h1>
-      <form onsubmit={handleSignIn} class="mt-6 space-y-4">
+      <h1 class="text-xl font-medium text-slate-900">Set a New Password</h1>
+      <p class="mt-2 text-sm text-slate-600">Choose a new password for your admin account.</p>
+      <form onsubmit={handleSetNewPassword} class="mt-6 space-y-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700" for="email">Email</label>
+          <label class="block text-sm font-medium text-slate-700" for="new-password">New password</label>
           <input
-            id="email"
-            type="email"
-            bind:value={email}
-            required
-            class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700" for="password">Password</label>
-          <input
-            id="password"
+            id="new-password"
             type="password"
-            bind:value={password}
+            bind:value={newPassword}
+            autocomplete="new-password"
+            minlength="8"
             required
             class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
           />
         </div>
         {#if authError}
-          <p class="text-sm text-red-600">{authError}</p>
+          <p class="text-sm text-red-600" role="alert">{authError}</p>
         {/if}
         <button
           type="submit"
-          disabled={signingIn}
+          disabled={resettingPassword}
           class="w-full rounded-full bg-rose-500 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {signingIn ? 'Signing in...' : 'Sign In'}
+          {resettingPassword ? 'Updating password...' : 'Update Password'}
         </button>
       </form>
+    </div>
+  {:else if !session}
+    <div class="mx-auto max-w-sm rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      {#if authMode === 'requestReset'}
+        <h1 class="text-xl font-medium text-slate-900">Reset Admin Password</h1>
+        <p class="mt-2 text-sm text-slate-600">Enter your admin email and we’ll send a password reset link.</p>
+        <form onsubmit={handlePasswordReset} class="mt-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              bind:value={email}
+              autocomplete="email"
+              required
+              class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+            />
+          </div>
+          {#if authError}
+            <p class="text-sm text-red-600" role="alert">{authError}</p>
+          {/if}
+          {#if authMessage}
+            <p class="text-sm text-green-700" role="status">{authMessage}</p>
+          {/if}
+          <button
+            type="submit"
+            disabled={resettingPassword}
+            class="w-full rounded-full bg-rose-500 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resettingPassword ? 'Sending link...' : 'Send Reset Link'}
+          </button>
+          <button
+            type="button"
+            onclick={() => { authMode = 'signIn'; authError = ''; authMessage = ''; }}
+            class="w-full text-sm text-slate-600 underline"
+          >
+            Back to sign in
+          </button>
+        </form>
+      {:else}
+        <h1 class="text-xl font-medium text-slate-900">Admin Sign In</h1>
+        <form onsubmit={handleSignIn} class="mt-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              bind:value={email}
+              autocomplete="email"
+              required
+              class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700" for="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              bind:value={password}
+              autocomplete="current-password"
+              required
+              class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
+            />
+          </div>
+          {#if authError}
+            <p class="text-sm text-red-600" role="alert">{authError}</p>
+          {/if}
+          {#if authMessage}
+            <p class="text-sm text-green-700" role="status">{authMessage}</p>
+          {/if}
+          <button
+            type="submit"
+            disabled={signingIn}
+            class="w-full rounded-full bg-rose-500 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {signingIn ? 'Signing in...' : 'Sign In'}
+          </button>
+          <button
+            type="button"
+            onclick={() => { authMode = 'requestReset'; authError = ''; authMessage = ''; }}
+            class="w-full text-sm text-slate-600 underline"
+          >
+            Forgot password?
+          </button>
+        </form>
+      {/if}
     </div>
   {:else}
     <div class="flex flex-wrap items-center justify-between gap-4">
