@@ -30,9 +30,6 @@
   </div>
 
   <div class="composition">
-    <p class="eyebrow">Together with their families</p>
-    <span class="ornament" aria-hidden="true"></span>
-
     <p class="invitation">Save the Date</p>
 
     <div class="date-block">
@@ -150,23 +147,6 @@
     animation: arrive 1.2s cubic-bezier(0.2, 0.65, 0.2, 1) both;
   }
 
-  .eyebrow {
-    margin: 0;
-    color: var(--mocca);
-    font-family: var(--font-body);
-    font-size: clamp(0.58rem, 1.8vw, 0.72rem);
-    font-weight: 500;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-  }
-
-  .ornament {
-    width: 1px;
-    height: clamp(2.5rem, 8vh, 4.5rem);
-    margin: clamp(1.1rem, 3.5vh, 2rem) 0;
-    background: linear-gradient(transparent, var(--taupe), transparent);
-  }
-
   .invitation {
     margin: 0;
     color: var(--olive);
@@ -249,11 +229,6 @@
   @media (max-height: 620px) {
     .composition {
       transform: scale(0.8);
-    }
-
-    .ornament {
-      height: 1rem;
-      margin: 0.6rem 0;
     }
 
     .date-block {

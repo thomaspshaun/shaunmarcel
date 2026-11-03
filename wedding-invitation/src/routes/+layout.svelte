@@ -3,10 +3,15 @@
   import '../app.css';
   import Footer from '$lib/components/Footer.svelte';
   import Nav from '$lib/components/Nav.svelte';
+  import { guestStore } from '$lib/guestStore';
   import { site } from '$lib/site-config';
 
   let { children } = $props();
-  let hasUniqueCode = $derived(Boolean(page.url.searchParams.get('code')?.trim()));
+  let requestedCode = $derived((page.url.searchParams.get('code') ?? '').trim().toUpperCase());
+  let hasVerifiedInvitation = $derived(
+    Boolean(requestedCode && $guestStore.code === requestedCode && $guestStore.guest)
+  );
+  let isSplashPage = $derived(page.url.pathname === '/' && !hasVerifiedInvitation);
 
   const title = `${site.coupleNames} — Wedding Invitation`;
   const description = `${site.coupleNames} invite you to a wedding weekend at ${site.venueName}, ${site.region}. Details, accommodation and RSVP.`;
@@ -31,12 +36,12 @@
   <meta name="twitter:image" content={image} />
 </svelte:head>
 
-<div class="flex min-h-screen flex-col" class:save-date-layout={hasUniqueCode}>
+<div class="flex min-h-screen flex-col" class:save-date-layout={isSplashPage}>
   <!-- Nav hidden for now -->
   <main class="flex-1">
     {@render children()}
   </main>
-  {#if !hasUniqueCode}
+  {#if !isSplashPage}
     <Footer />
   {/if}
 </div>

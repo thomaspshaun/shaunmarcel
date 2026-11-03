@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/state';
+  import { onMount } from 'svelte';
   import Hero from '$lib/components/Hero.svelte';
   import Welcome from '$lib/components/Welcome.svelte';
   import Timeline from '$lib/components/Timeline.svelte';
@@ -9,30 +9,41 @@
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
   import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
-  import GuestHeader from '$lib/components/GuestHeader.svelte'; // Hidden for now
   import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
-  import InvitationEnvelope from '$lib/components/InvitationEnvelope.svelte';
   import SaveTheDateSplash from '$lib/components/SaveTheDateSplash.svelte';
   import { site } from '$lib/site-config';
+  import { guestStore } from '$lib/guestStore';
+  import { findGuestByCode } from '$lib/supabase';
 
-  let hasUniqueCode = $derived(Boolean(page.url.searchParams.get('code')?.trim()));
+  let hasVerifiedInvitation = $state(false);
+
+  onMount(async () => {
+    const code = new URLSearchParams(window.location.search).get('code')?.trim().toUpperCase();
+    if (!code) return;
+
+    guestStore.clearGuest();
+
+    try {
+      const guest = await findGuestByCode(code);
+      if (!guest) return;
+
+      guestStore.setGuest(guest, code);
+      hasVerifiedInvitation = true;
+    } catch (error) {
+      console.error('Could not verify invitation code; showing Save the Date splash.', error);
+    }
+  });
 </script>
 
 <svelte:head>
-  {#if !hasUniqueCode}
+  {#if hasVerifiedInvitation}
     <title>{site.coupleNames} — Wedding Invitation</title>
     <meta name="description" content="{site.coupleNames}'s wedding invitation, RSVP, weekend programme and guest information." />
   {/if}
 </svelte:head>
 
-{#if hasUniqueCode}
-  <SaveTheDateSplash />
-{:else}
-  <!-- GuestHeader hidden for now -->
-
-  <InvitationEnvelope />
-
+{#if hasVerifiedInvitation}
   <Hero>
     {#snippet action()}
       <GuestLookupModal />
@@ -48,4 +59,6 @@
   <PhotoGallery />
   <Guestbook />
   <GuestPhotoUpload />
+{:else}
+  <SaveTheDateSplash />
 {/if}
