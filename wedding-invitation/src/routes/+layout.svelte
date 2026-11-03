@@ -36,7 +36,10 @@
   <meta name="twitter:image" content={image} />
 </svelte:head>
 
-<div class="flex min-h-screen flex-col" class:save-date-layout={isSplashPage}>
+<div class="site-layout flex min-h-screen flex-col" class:save-date-layout={isSplashPage}>
+  {#if !isSplashPage}
+    <div class="invitation-background" aria-hidden="true"></div>
+  {/if}
   <!-- Nav hidden for now -->
   <main class="flex-1">
     {@render children()}
@@ -47,6 +50,19 @@
 </div>
 
 <style>
+  .site-layout {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .invitation-background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: url('/invitation-background.png') center / cover no-repeat;
+    pointer-events: none;
+  }
+
   .save-date-layout {
     min-height: 100vh;
     min-height: 100dvh;
