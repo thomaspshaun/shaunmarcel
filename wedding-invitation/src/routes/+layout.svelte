@@ -40,13 +40,15 @@
   {#if !isSplashPage}
     <div class="invitation-background" aria-hidden="true"></div>
   {/if}
-  <!-- Nav hidden for now -->
-  <main class="flex-1">
-    {@render children()}
-  </main>
-  {#if !isSplashPage}
-    <Footer />
-  {/if}
+  <div class="site-content flex flex-1 flex-col">
+    <!-- Nav hidden for now -->
+    <main class="flex-1">
+      {@render children()}
+    </main>
+    {#if !isSplashPage}
+      <Footer />
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -58,9 +60,14 @@
   .invitation-background {
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: 0;
     background: url('/invitation-background.png') center / cover no-repeat;
     pointer-events: none;
+  }
+
+  .site-content {
+    position: relative;
+    z-index: 1;
   }
 
   .save-date-layout {
