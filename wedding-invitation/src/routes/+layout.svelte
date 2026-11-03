@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import '../app.css';
   import Footer from '$lib/components/Footer.svelte';
   import Nav from '$lib/components/Nav.svelte';
   import { site } from '$lib/site-config';
 
   let { children } = $props();
+  let hasUniqueCode = $derived(Boolean(page.url.searchParams.get('code')?.trim()));
 
   const title = `${site.coupleNames} — Wedding Invitation`;
   const description = `${site.coupleNames} invite you to a wedding weekend at ${site.venueName}, ${site.region}. Details, accommodation and RSVP.`;
@@ -29,10 +31,20 @@
   <meta name="twitter:image" content={image} />
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
+<div class="flex min-h-screen flex-col" class:save-date-layout={hasUniqueCode}>
   <!-- Nav hidden for now -->
   <main class="flex-1">
     {@render children()}
   </main>
-  <Footer />
+  {#if !hasUniqueCode}
+    <Footer />
+  {/if}
 </div>
+
+<style>
+  .save-date-layout {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+</style>
