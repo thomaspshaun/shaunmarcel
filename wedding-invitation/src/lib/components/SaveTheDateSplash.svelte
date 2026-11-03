@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { site } from '$lib/site-config';
 
+  const photo = '/save-the-date-illustration.png';
+
   onMount(() => {
     const root = document.documentElement;
     const body = document.body;
@@ -22,24 +24,21 @@
 </svelte:head>
 
 <main class="splash" aria-label="Save the date: 1 April 2027, Cape Town, Shaun and Marcel">
-  <div class="frame" aria-hidden="true">
-    <span class="corner corner-top-left"></span>
-    <span class="corner corner-top-right"></span>
-    <span class="corner corner-bottom-left"></span>
-    <span class="corner corner-bottom-right"></span>
-  </div>
+  <img
+    class="background-image"
+    src={photo}
+    alt="A hand-drawn bride and groom above a softly textured cream background"
+  />
+  <div class="veil" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true"></div>
 
-  <div class="composition">
+  <section class="composition" aria-label="Wedding details">
     <p class="invitation">Save the Date</p>
-
-    <div class="date-block">
-      <p class="date">1 April 2027</p>
-      <p class="location">Cape Town</p>
-    </div>
-
+    <p class="date">1 April 2027</p>
+    <p class="location">Cape Town</p>
     <span class="divider" aria-hidden="true"><span></span></span>
     <h1 class="names">{site.coupleNames}</h1>
-  </div>
+  </section>
 </main>
 
 <style>
@@ -54,8 +53,7 @@
     --cream: #fffbe8;
     --taupe: #d2b48c;
     --mocca: #a67c52;
-    --olive: #bdc3a7;
-    --soft-white: #fdfdfd;
+    --olive: #687052;
 
     position: fixed;
     inset: 0;
@@ -65,127 +63,104 @@
     min-height: 100dvh;
     overflow: hidden;
     place-items: center;
-    padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
-      max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
-    color: #51493e;
-    background:
-      radial-gradient(ellipse at 50% 46%, rgb(253 253 253 / 78%), transparent 58%),
-      var(--cream);
+    color: var(--olive);
+    background: var(--cream);
     isolation: isolate;
   }
 
-  .splash::before,
-  .splash::after {
+  .background-image,
+  .veil,
+  .frame {
     position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .background-image {
+    z-index: -2;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  .veil {
     z-index: -1;
-    width: min(45vw, 34rem);
-    aspect-ratio: 1;
-    content: "";
+    background: linear-gradient(
+      180deg,
+      transparent 24%,
+      rgb(255 251 232 / 10%) 31%,
+      rgb(255 251 232 / 33%) 48%,
+      rgb(255 251 232 / 18%) 100%
+    );
     pointer-events: none;
-    border: 1px solid rgb(166 124 82 / 11%);
-    border-radius: 50%;
-  }
-
-  .splash::before {
-    top: -34%;
-    right: -17%;
-    box-shadow: 0 0 0 2rem rgb(189 195 167 / 5%), 0 0 0 5rem rgb(210 180 140 / 5%);
-  }
-
-  .splash::after {
-    bottom: -37%;
-    left: -18%;
-    box-shadow: 0 0 0 2rem rgb(189 195 167 / 6%), 0 0 0 5rem rgb(210 180 140 / 5%);
   }
 
   .frame {
-    position: absolute;
-    inset: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-      max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-    border: 1px solid rgb(166 124 82 / 28%);
+    inset: max(0.7rem, env(safe-area-inset-top)) max(0.7rem, env(safe-area-inset-right))
+      max(0.7rem, env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left));
+    width: auto;
+    height: auto;
+    border: 1px solid rgb(166 124 82 / 35%);
     pointer-events: none;
   }
 
-  .corner {
-    position: absolute;
-    width: 1.1rem;
-    height: 1.1rem;
-    border-color: var(--mocca);
-    border-style: solid;
-  }
-
-  .corner-top-left {
-    top: -1px;
-    left: -1px;
-    border-width: 1px 0 0 1px;
-  }
-
-  .corner-top-right {
-    top: -1px;
-    right: -1px;
-    border-width: 1px 1px 0 0;
-  }
-
-  .corner-bottom-left {
-    bottom: -1px;
-    left: -1px;
-    border-width: 0 0 1px 1px;
-  }
-
-  .corner-bottom-right {
-    right: -1px;
-    bottom: -1px;
-    border-width: 0 1px 1px 0;
-  }
-
   .composition {
+    position: absolute;
+    inset: 31% 1rem max(5%, env(safe-area-inset-bottom));
     display: flex;
-    width: min(100%, 54rem);
     flex-direction: column;
     align-items: center;
+    justify-content: space-evenly;
     text-align: center;
-    animation: arrive 1.2s cubic-bezier(0.2, 0.65, 0.2, 1) both;
+  }
+
+  .invitation,
+  .date,
+  .location,
+  .divider,
+  .names {
+    margin: 0;
+    opacity: 0;
+    animation: rise-in 1.15s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
   }
 
   .invitation {
-    margin: 0;
     color: var(--olive);
     font-family: var(--font-script);
-    font-size: clamp(3.75rem, 13vw, 8.5rem);
-    line-height: 0.95;
-    text-shadow: 0 1px 0 rgb(166 124 82 / 25%);
-  }
-
-  .date-block {
-    margin-top: clamp(1.6rem, 5vh, 3rem);
+    font-size: clamp(3.2rem, 11vw, 7.5rem);
+    line-height: 1;
+    text-shadow: 0 1px 0 rgb(255 251 232 / 75%);
+    animation-delay: 150ms;
   }
 
   .date {
-    margin: 0;
-    color: #4b493f;
+    color: #51493e;
     font-family: var(--font-display);
-    font-size: clamp(1.45rem, 4vw, 2.45rem);
+    font-size: clamp(1.7rem, 5vw, 3.2rem);
+    font-variant-numeric: lining-nums;
     font-weight: 500;
     letter-spacing: 0.12em;
+    text-shadow: 0 1px 0 rgb(255 251 232 / 75%);
+    animation-delay: 350ms;
   }
 
   .location {
-    margin: 0.75rem 0 0;
     color: var(--mocca);
     font-family: var(--font-body);
-    font-size: clamp(0.65rem, 1.8vw, 0.78rem);
+    font-size: clamp(0.7rem, 2vw, 0.95rem);
     font-weight: 500;
-    letter-spacing: 0.3em;
+    letter-spacing: 0.34em;
     text-transform: uppercase;
+    animation-delay: 500ms;
   }
 
   .divider {
     display: flex;
-    width: clamp(4rem, 14vw, 7rem);
+    width: clamp(4.5rem, 15vw, 7rem);
     align-items: center;
     justify-content: center;
     gap: 0.55rem;
-    margin: clamp(1.5rem, 5vh, 2.75rem) 0 clamp(1rem, 3vh, 1.6rem);
+    animation-delay: 650ms;
   }
 
   .divider::before,
@@ -205,19 +180,20 @@
   }
 
   .names {
-    margin: 0;
     color: var(--mocca);
     font-family: var(--font-display);
-    font-size: clamp(2rem, 7.5vw, 4.4rem);
+    font-size: clamp(2.2rem, 8vw, 4.8rem);
     font-weight: 400;
     letter-spacing: 0.045em;
     line-height: 1;
+    text-shadow: 0 1px 0 rgb(255 251 232 / 75%);
+    animation-delay: 800ms;
   }
 
-  @keyframes arrive {
+  @keyframes rise-in {
     from {
       opacity: 0;
-      transform: translateY(18px);
+      transform: translateY(20px);
     }
 
     to {
@@ -228,20 +204,25 @@
 
   @media (max-height: 620px) {
     .composition {
-      transform: scale(0.8);
+      inset-block: 29% max(3%, env(safe-area-inset-bottom));
     }
+  }
 
-    .date-block {
-      margin-top: 1rem;
-    }
-
-    .divider {
-      margin: 0.9rem 0 0.6rem;
+  @media (min-width: 760px) {
+    .composition {
+      inset-inline: max(3rem, 10vw);
+      inset-block-start: 29%;
+      inset-block-end: 8%;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .composition {
+    .invitation,
+    .date,
+    .location,
+    .divider,
+    .names {
+      opacity: 1;
       animation: none;
     }
   }
