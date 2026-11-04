@@ -60,7 +60,8 @@
   }
 </script>
 
-<section id="guestbook" class="mx-auto max-w-3xl px-6 py-20">
+<section id="guestbook" class="bg-paper-2/50 px-6 py-20">
+  <div class="mx-auto max-w-3xl">
   <div class="text-center">
     <p class="eyebrow">
       Leave a Note
@@ -136,5 +137,6 @@
         </div>
       {/each}
     {/if}
+  </div>
   </div>
 </section>

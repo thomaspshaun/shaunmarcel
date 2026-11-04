@@ -20,7 +20,7 @@
   ]);
 </script>
 
-<section id="registry" class="border-t border-line/70 bg-paper-2/40 px-6 py-24 sm:py-32">
+<section id="registry" class="border-t border-line/70 px-6 py-24 sm:py-32">
   <div class="mx-auto max-w-5xl text-center" use:reveal>
     <p class="eyebrow">Gifts</p>
     <h2 class="heading mt-4">Choose an Option</h2>

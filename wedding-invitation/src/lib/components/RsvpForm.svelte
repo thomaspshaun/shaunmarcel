@@ -114,7 +114,8 @@
   }
 </script>
 
-<section id="rsvp" class="mx-auto max-w-xl px-6 py-20">
+<section id="rsvp" class="bg-paper-2/50 px-6 py-20">
+  <div class="mx-auto max-w-xl">
   <div class="text-center">
     <p class="eyebrow">RSVP</p>
     <h2 class="heading mt-4">
@@ -295,4 +296,5 @@
       </div>
     {/if}
   </div>
+</div>
 </section>

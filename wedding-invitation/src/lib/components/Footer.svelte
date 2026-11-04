@@ -5,7 +5,7 @@
   const year = new Date().getFullYear();
 </script>
 
-<footer class="border-t border-line/70 px-6 py-16 text-center">
+<footer class="border-t border-line/70 bg-paper-2/50 px-6 py-16 text-center">
   <p class="font-script text-5xl text-ink">{site.coupleNames}</p>
   <Sprig class="mx-auto mt-6 h-5 w-32 text-champagne" />
   <p class="mt-6 text-[0.68rem] uppercase tracking-[0.3em] text-muted">
