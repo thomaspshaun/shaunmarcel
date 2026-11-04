@@ -36,7 +36,7 @@ export const registry = {
     bankName: "Discovery Bank",
     accountNumber: "18536742051",
     branchCode: "679000",
-    reference: "Honeymoon Fund <your name>",
+    referencePrefix: "Honeymoon Fund",
   },
 };
 

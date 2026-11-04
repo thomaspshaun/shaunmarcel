@@ -1,22 +1,35 @@
 <script lang="ts">
   import Sprig from '$lib/components/Sprig.svelte';
   import { reveal } from '$lib/actions/reveal';
+  import { guestStore } from '$lib/guestStore';
   import { registry } from '$lib/site-config';
 
   let showBankDetails = $state(false);
-  let copied = $state(false);
+  let copyMessage = $state('');
+  const guestName = $derived(
+    $guestStore.guest
+      ? [$guestStore.guest.first_name, $guestStore.guest.partner_first_name]
+          .filter((name): name is string => Boolean(name?.trim()))
+          .join(' & ')
+      : 'Guest'
+  );
+  const reference = $derived(`${registry.bankDetails.referencePrefix} ${guestName}`);
 
-  async function copyReference() {
-    await navigator.clipboard.writeText(registry.bankDetails.reference);
-    copied = true;
-    window.setTimeout(() => (copied = false), 2000);
+  async function copyValue(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      copyMessage = `${label} copied`;
+    } catch {
+      copyMessage = `Could not copy ${label.toLowerCase()}. Please copy it manually.`;
+    }
   }
 
   const rows = $derived([
+    ['Reference', reference],
     ['Account name', registry.bankDetails.accountName],
     ['Bank', registry.bankDetails.bankName],
-    ['Account number', registry.bankDetails.accountNumber],
-    ['Branch code', registry.bankDetails.branchCode]
+    ['Branch code', registry.bankDetails.branchCode],
+    ['Account number', registry.bankDetails.accountNumber]
   ]);
 </script>
 
@@ -65,21 +78,34 @@
             <p class="eyebrow">Banking details</p>
             <dl class="mt-4 text-sm">
               {#each rows as [label, value] (label)}
-                <div class="flex justify-between gap-4 border-b border-line/70 py-2.5">
+                <div class="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line/70 py-2.5">
                   <dt class="text-muted">{label}</dt>
-                  <dd class="text-right text-ink">{value}</dd>
+                  <dd class="min-w-0 break-words text-right text-ink">{value}</dd>
+                  <button
+                    type="button"
+                    class="rounded p-1.5 text-muted transition hover:bg-line/40 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                    aria-label={`Copy ${label}`}
+                    title={`Copy ${label}`}
+                    onclick={() => copyValue(value, label)}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="h-4 w-4"
+                    >
+                      <rect x="8" y="8" width="14" height="14" rx="2" />
+                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                    </svg>
+                  </button>
                 </div>
               {/each}
             </dl>
-            <div class="mt-5 flex items-center justify-between gap-3">
-              <div>
-                <p class="eyebrow eyebrow-accent">Reference</p>
-                <code class="mt-1 block text-sm text-ink">{registry.bankDetails.reference}</code>
-              </div>
-              <button type="button" onclick={copyReference} class="btn-ghost !px-4 !py-2">
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            </div>
+            <p class="sr-only" aria-live="polite">{copyMessage}</p>
           </div>
         {/if}
       </article>
