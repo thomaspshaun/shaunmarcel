@@ -16,8 +16,8 @@ export const site = {
   heroImage: "",
   contactPhoneDisplay: "083 633 8108",
   contactPhoneHref: "tel:+27836338108",
-  siteUrl: "https://dev.shaunmarcel.co.za",
-  socialImagePath: "/favicon.svg",
+  siteUrl: "https://shaunmarcel.co.za",
+  socialImagePath: "/social-preview.jpg",
 };
 
 export const rsvpDeadlines = {
