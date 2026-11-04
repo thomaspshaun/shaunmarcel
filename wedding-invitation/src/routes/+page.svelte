@@ -8,7 +8,6 @@
   import RsvpForm from '$lib/components/RsvpForm.svelte';
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
-  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
   import SaveTheDateSplash from '$lib/components/SaveTheDateSplash.svelte';
   import { site } from '$lib/site-config';
@@ -43,11 +42,7 @@
 </svelte:head>
 
 {#if hasVerifiedInvitation}
-  <Hero>
-    {#snippet action()}
-      <GuestLookupModal />
-    {/snippet}
-  </Hero>
+  <Hero />
 
   <Welcome />
   <Timeline />
