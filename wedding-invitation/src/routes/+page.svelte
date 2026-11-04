@@ -8,7 +8,6 @@
   import RsvpForm from '$lib/components/RsvpForm.svelte';
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
-  import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
   import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
   import SaveTheDateSplash from '$lib/components/SaveTheDateSplash.svelte';
@@ -56,9 +55,8 @@
   <Accommodations />
   <RsvpForm />
   <Registry />
-  <PhotoGallery />
   <Guestbook />
-  <GuestPhotoUpload />
+  <PhotoGallery />
 {:else}
   <SaveTheDateSplash />
 {/if}
