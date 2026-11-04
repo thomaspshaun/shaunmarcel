@@ -6,13 +6,11 @@
 
   let guest = $derived($guestStore.guest);
   let profile = $derived(toGuestProfile(guest));
-  let showMore = $state(false);
-
-  const closest = accommodations.filter((a) => a.group === 'closest');
-  const further = accommodations.filter((a) => a.group === 'further');
+  const recommended = accommodations.filter((a) => a.group === 'recommended');
+  const nearby = accommodations.filter((a) => a.group === 'nearby');
 </script>
 
-<section id="accommodation" class="mx-auto max-w-4xl px-6 py-24 sm:py-32">
+<section id="accommodation" class="mx-auto max-w-4xl px-6 py-12 sm:py-16">
   {#if guest?.guest_type === 'family'}
     <div class="text-center" use:reveal>
       <p class="eyebrow">Your Accommodation</p>
@@ -63,53 +61,63 @@
       <p class="eyebrow">Where to Stay</p>
       <h2 class="heading mt-4">Accommodation Nearby</h2>
       <p class="lede mx-auto mt-6 max-w-lg">
-        Guests can choose from a selection of nearby hotels, guesthouses and wine estates. We have
-        gathered a few close to {venue.name} to make planning your stay easier.
+        Here are some nearby places to stay while celebrating with us at {venue.name}.
+      </p>
+      <p class="mt-3 text-xs text-muted">
+        Approximate driving distances from {venue.name}; actual routes may vary.
       </p>
     </div>
 
-    <p class="eyebrow eyebrow-accent mt-16">Closest to the venue</p>
+    <h3 class="eyebrow eyebrow-accent mt-8">Recommended Accommodation</h3>
+    <div class="mt-4 grid gap-3 md:grid-cols-3">
+      {#each recommended as stay (stay.id)}
+        <article class="border border-line/70 bg-surface/80 p-4 sm:p-5" use:reveal>
+          <h4 class="font-display text-2xl leading-tight text-ink">{stay.name}</h4>
+          <p class="eyebrow eyebrow-accent mt-1.5">{stay.distance}</p>
+          <p class="lede mt-2 text-sm leading-5">{stay.description}</p>
+          {#if stay.promotion}
+            <p class="mt-2 text-sm leading-5 text-ink">
+              Wedding guests receive a <strong>{stay.promotion}</strong> when booking directly via email.
+              Contact Pia at <a class="underline" href={'mailto:' + stay.email}>{stay.email}</a> and quote
+              <strong>"Shaun &amp; Marcel"</strong>.
+            </p>
+          {/if}
+          <div class="mt-3 space-y-1.5 text-sm">
+            {#if !stay.promotion}
+              <p>Email: <a class="underline" href={'mailto:' + stay.email}>{stay.email}</a></p>
+            {/if}
+            {#if stay.phone}
+              <p>Tel: <a class="underline" href={'tel:' + stay.phone.replace(/[^+\d]/g, '')}>{stay.phone}</a></p>
+            {/if}
+            <a href={stay.url} target="_blank" rel="noopener noreferrer" class="btn-ghost mt-2 inline-flex !px-4 !py-2">
+              Visit Website
+            </a>
+          </div>
+        </article>
+      {/each}
+    </div>
+
+    <h3 class="eyebrow eyebrow-accent mt-8">Other Nearby Options</h3>
     <ul class="mt-4 border-t border-line">
-      {#each closest as stay (stay.id)}
-        {@render entry(stay)}
+      {#each nearby as stay (stay.id)}
+        <li class="grid gap-2 border-b border-line py-3 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h4 class="font-display text-xl text-ink">{stay.name}</h4>
+              <span class="eyebrow eyebrow-accent">{stay.distance}</span>
+            </div>
+            <div class="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+              <a class="underline" href={'mailto:' + stay.email}>{stay.email}</a>
+              {#if stay.phone}
+                <a class="underline" href={'tel:' + stay.phone.replace(/[^+\d]/g, '')}>{stay.phone}</a>
+              {/if}
+            </div>
+          </div>
+          <a href={stay.url} target="_blank" rel="noopener noreferrer" class="btn-ghost justify-self-start !px-4 !py-2 sm:justify-self-end">
+            Visit Website
+          </a>
+        </li>
       {/each}
     </ul>
-
-    {#if showMore}
-      <p class="eyebrow eyebrow-accent mt-14">More options</p>
-      <ul class="mt-4 border-t border-line">
-        {#each further as stay (stay.id)}
-          {@render entry(stay)}
-        {/each}
-      </ul>
-    {/if}
-
-    <div class="mt-10 text-center">
-      <button type="button" class="btn-ghost" aria-expanded={showMore} onclick={() => (showMore = !showMore)}>
-        {showMore ? 'Show fewer options' : 'More options'}
-      </button>
-      <p class="mx-auto mt-8 max-w-md text-xs leading-6 text-muted">
-        Price level is a relative guide only ($ to $$$$). Rates for April 2027 may not be published
-        yet, so please check each property for current prices.
-      </p>
-    </div>
   {/if}
 </section>
-
-{#snippet entry(stay: (typeof accommodations)[number])}
-  <li class="grid gap-5 border-b border-line py-8 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-10" use:reveal>
-    <div>
-      <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <h3 class="font-display text-2xl text-ink sm:text-3xl">{stay.name}</h3>
-        <span class="eyebrow eyebrow-accent">{stay.distance} from Eikenhof</span>
-      </div>
-      <p class="lede mt-2 max-w-xl text-sm">{stay.description}</p>
-      <p class="mt-3 text-sm tracking-[0.2em]" aria-label="Price level {stay.price.length} of 4">
-        <span class="text-sage-dark">{stay.price}</span><span class="text-line">{'$'.repeat(4 - stay.price.length)}</span>
-      </p>
-    </div>
-    <a href={stay.url} target="_blank" rel="noopener noreferrer" class="btn-ghost justify-self-start sm:justify-self-end">
-      View accommodation
-    </a>
-  </li>
-{/snippet}

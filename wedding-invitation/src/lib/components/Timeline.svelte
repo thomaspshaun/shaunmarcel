@@ -15,6 +15,39 @@
   };
   let guest = $derived($guestStore.guest);
   let guestType = $derived(guest?.guest_type ?? '');
+  let usesUpdatedItinerary = $derived(['vip', 'standard', 'extra'].includes(guestType));
+  const updatedItinerary = [
+    {
+      time: '14:30',
+      title: 'The Guests Arrive',
+      description: 'Find your seats, grab a smile and get ready for the celebrations!'
+    },
+    {
+      time: '15:00',
+      title: 'The “I Do” Moment',
+      description: 'The main event! Time for happy tears, big smiles and a little romance.'
+    },
+    {
+      time: '16:00',
+      title: 'Cocktails, Photos & Good Times',
+      description: 'Sip, mingle, strike a pose and enjoy some well-deserved catching up.'
+    },
+    {
+      time: '18:00',
+      title: 'Reception Celebrations',
+      description: 'The formalities, speeches and all the special moments.'
+    },
+    {
+      time: '19:00',
+      title: 'Let’s Eat!',
+      description: 'Good food, great company and plenty of reasons to loosen that belt!'
+    },
+    {
+      time: 'Then…',
+      title: 'Let’s Dance!',
+      description: 'First dance, followed by a night of music, laughter and questionable dance moves!'
+    }
+  ];
   let visibleWeekend = $derived(
     guestType === 'family'
       ? weekend.map((day) =>
@@ -51,12 +84,25 @@
 
         {#if day.id === 'wedding'}
           <ol class="mx-auto mt-10 max-w-md border-t border-line/70">
-            {#each scheduleEvents as item (item.id)}
-              <li class="grid grid-cols-[4.5rem_1fr] items-baseline gap-4 border-b border-line/70 py-4 sm:grid-cols-[6rem_1fr]">
-                <span class="font-display text-2xl tabular-nums text-sage">{item.time}</span>
-                <span class="text-sm leading-6 text-ink sm:text-base">{item.title}</span>
-              </li>
-            {/each}
+            {#if usesUpdatedItinerary}
+              {#each updatedItinerary as item (item.title)}
+                <li class="grid grid-cols-[4.5rem_1rem_1fr] items-start gap-3 border-b border-line/70 py-5 sm:grid-cols-[6rem_1rem_1fr]">
+                  <span class="font-display text-xl tabular-nums text-sage sm:text-2xl">{item.time}</span>
+                  <span class="mt-2 h-2.5 w-2.5 rotate-45 border border-ink/70" aria-hidden="true"></span>
+                  <div>
+                    <h4 class="text-sm font-medium leading-6 text-ink sm:text-base">{item.title}</h4>
+                    <p class="mt-1 text-sm leading-6 text-muted">{item.description}</p>
+                  </div>
+                </li>
+              {/each}
+            {:else}
+              {#each scheduleEvents as item (item.id)}
+                <li class="grid grid-cols-[4.5rem_1fr] items-baseline gap-4 border-b border-line/70 py-4 sm:grid-cols-[6rem_1fr]">
+                  <span class="font-display text-2xl tabular-nums text-sage">{item.time}</span>
+                  <span class="text-sm leading-6 text-ink sm:text-base">{item.title}</span>
+                </li>
+              {/each}
+            {/if}
           </ol>
           <div class="mt-8 flex justify-center">
             <AddToCalendar event={weddingDay} filename="wedding-day.ics" label="Add to calendar" />

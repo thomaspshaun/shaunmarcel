@@ -32,11 +32,11 @@ export const registry = {
   description:
     "Your presence is the greatest gift. If you would like to contribute, you can help us create memories on our honeymoon.",
   bankDetails: {
-    accountName: "ACCOUNT NAME TO BE CONFIRMED",
-    bankName: "BANK NAME TO BE CONFIRMED",
-    accountNumber: "ACCOUNT NUMBER TO BE CONFIRMED",
-    branchCode: "BRANCH CODE TO BE CONFIRMED",
-    reference: "Shaun & Marcel",
+    accountName: "Shaun Padachi",
+    bankName: "Discovery Bank",
+    accountNumber: "18536742051",
+    branchCode: "679000",
+    reference: "Honeymoon Fund <your name>",
   },
 };
 
@@ -144,115 +144,84 @@ export interface Accommodation {
   name: string;
   distance: string;
   description: string;
-  // Relative guide only: "$" to "$$$$". Exact 2027 rates are not published yet.
-  price: string;
+  email: string;
+  phone?: string;
   url: string;
-  group: "closest" | "further";
+  group: "recommended" | "nearby";
+  promotion?: string;
 }
-
-const search = (q: string) =>
-  `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 
 export const accommodations: Accommodation[] = [
   {
-    id: "vine-guesthouse",
-    name: "Vine Guesthouse",
-    distance: "5–7 min",
-    description:
-      "A boutique guesthouse in Koelenhof with 12 rooms, and the closest practical option to the venue.",
-    price: "$$",
-    // TODO: replace with the official website link.
-    url: search("Vine Guesthouse Koelenhof Stellenbosch"),
-    group: "closest",
-  },
-  {
-    id: "groenvlei-guest-farm",
-    name: "Groenvlei Guest Farm",
-    distance: "7–9 min",
-    description:
-      "A Winelands guest farm with five en-suite guesthouse rooms and self-catering units.",
-    price: "$$",
-    url: "https://groenvlei.com",
-    group: "closest",
-  },
-  {
-    id: "hazendal-hotel-spa",
-    name: "Hazendal Hotel & Spa",
-    distance: "8–10 min",
-    description:
-      "A hotel and spa with 34 rooms and suites: our premium hotel option.",
-    price: "$$$$",
-    url: "https://www.hazendal.co.za/stay/",
-    group: "closest",
+    id: "kunjani-villas",
+    name: "Kunjani Villas",
+    distance: "Approx. 10–12 km drive",
+    description: "A selection of unique villas in the heart of the Winelands.",
+    email: "info@kunjani-villas.co.za",
+    url: "https://www.kunjani-villas.co.za",
+    group: "recommended",
+    promotion: "20% discount",
   },
   {
     id: "devonvale-golf-wine-estate",
     name: "Devonvale Golf & Wine Estate",
-    distance: "10–12 min",
+    distance: "Approx. 8–10 km drive",
     description:
-      "Hotel rooms, suites and holiday homes, well suited to families and groups.",
-    price: "$$$",
-    url: "https://devonvale.co.za/accommodation/",
-    group: "closest",
+      "A scenic estate on Bottelary Road, Stellenbosch. Limited availability for our wedding dates (31 March – 2 April 2027). Contact reservations for availability.",
+    email: "reservations@devonvale.co.za",
+    phone: "+27 21 888 4700",
+    url: "https://www.devonvale.co.za",
+    group: "recommended",
   },
   {
-    id: "rouana-guest-farm",
-    name: "Rouana Guest Farm",
-    distance: "12–15 min",
+    id: "fort-simon-estate",
+    name: "Fort Simon Estate",
+    distance: "Approx. 1–2 km drive",
     description:
-      "A quiet guest farm with around ten rooms and units, sleeping about twenty.",
-    price: "$$",
-    url: "https://rouanaguestfarm.com",
-    group: "further",
+      "Within walking distance of Eikenhof Estate. Their four-bedroom Homestead accommodates up to 8 guests and is available for exclusive self-catering stays (minimum two nights).",
+    email: "IHS@fortsimonevents.co.za",
+    phone: "076 228 7954",
+    url: "https://www.fortsimon.com",
+    group: "recommended",
   },
   {
-    id: "kunjani-wines",
-    name: "Kunjani Wines",
-    distance: "13–16 min",
-    description:
-      "Four villas on a wine farm, ideal for groups who would like to stay together.",
-    price: "$$$",
-    url: "https://www.kunjaniwines.co.za",
-    group: "further",
+    id: "belcharto-barn-cottages",
+    name: "Belcharto Barn & Cottages",
+    distance: "Approx. 3–5 km drive",
+    description: "",
+    email: "info@belcharto.co.za",
+    phone: "064 514 0086",
+    url: "https://www.belcharto.co.za",
+    group: "nearby",
   },
   {
-    id: "zevenwacht-wine-estate",
-    name: "Zevenwacht Wine Estate",
-    distance: "15–18 min",
-    description:
-      "Country inn suites, vineyard cottages and a self-catering chalet, good for families and larger groups.",
-    price: "$$$",
-    // TODO: replace with the official website link.
-    url: search("Zevenwacht Wine Estate accommodation"),
-    group: "further",
+    id: "groenvlei-guest-farm",
+    name: "Groenvlei Guest Farm",
+    distance: "Approx. 5–7 km drive",
+    description: "",
+    email: "accommodation@groenvleiguestfarm.co.za",
+    phone: "021 903 6277",
+    url: "https://groenvlei.com",
+    group: "nearby",
   },
   {
-    id: "the-log-collective",
-    name: "The Log Collective",
-    distance: "18–20 min",
-    description:
-      "Vineyard cabins, villas and an apartment: something a little different.",
-    price: "$$$",
-    url: "https://thelogcollective.co.za",
-    group: "further",
+    id: "mooiplaas-wine-estate",
+    name: "Mooiplaas Wine Estate",
+    distance: "Approx. 7–9 km drive",
+    description: "",
+    email: "info@mooiplaas.co.za",
+    phone: "021 200 7493",
+    url: "https://mooiplaas.co.za",
+    group: "nearby",
   },
   {
-    id: "devon-valley-hotel",
-    name: "Devon Valley Hotel",
-    distance: "20–22 min",
-    description: "A 50-room hotel, a good choice for larger numbers.",
-    price: "$$$",
-    url: "https://devonvalleyhotel.com",
-    group: "further",
-  },
-  {
-    id: "spier-hotel",
-    name: "Spier Hotel",
-    distance: "22–25 min",
-    description:
-      "A large Winelands hotel with 80 rooms and two villas, plus restaurants and a spa.",
-    price: "$$$",
-    url: "https://www.spier.co.za",
-    group: "further",
+    id: "vine-guest-house",
+    name: "Vine Guest House",
+    distance: "Approx. 4–6 km drive",
+    description: "",
+    email: "info@vineguesthouse.co.za",
+    phone: "021 865 2233",
+    url: "https://vineguesthouse.co.za",
+    group: "nearby",
   },
 ];
