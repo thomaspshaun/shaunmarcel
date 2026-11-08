@@ -40,7 +40,7 @@
 
     <div class="mt-12 flex flex-wrap justify-center gap-4">
       <a href="/#rsvp" class="btn">RSVP / Update RSVP</a>
-      <a href="/#weekend" class="btn-ghost">View the weekend</a>
+      <a href="/#wedding-day" class="btn-ghost">View the wedding day</a>
     </div>
 
     <p class="mt-16 text-sm text-muted">

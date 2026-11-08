@@ -35,10 +35,8 @@ export const registry = {
 };
 
 export const navLinks = [
-  { href: "#weekend", label: "Our Weekend" },
-  { href: "#wedding", label: "The Wedding" },
+  { href: "#wedding-day", label: "Wedding Day" },
   { href: "#venue", label: "Venue" },
-  { href: "#accommodation", label: "Accommodation" },
   { href: "#rsvp", label: "RSVP" },
 ];
 
@@ -102,26 +100,6 @@ export const scheduleEvents = [
   },
 ];
 
-export const weekend = [
-  {
-    id: "arrival",
-    day: "Wednesday",
-    date: "31 March",
-    title: "An Evening Before the Wedding",
-    description:
-      "We would love for you to join us for an evening of good food, drinks and wonderful company as we celebrate ahead of our special day. A meal will be provided, with a cash bar available for those wishing to enjoy a drink. We look forward to spending the evening with you.",
-    note: "",
-  },
-  {
-    id: "wedding",
-    day: "Thursday",
-    date: "1 April",
-    title: "Our Wedding Day",
-    description: "The main celebration takes place on Thursday.",
-    note: "",
-  },
-];
-
 export const venue = {
   name: "Eikenhof Estate",
   region: "Cape Winelands · South Africa",
@@ -132,90 +110,3 @@ export const venue = {
   // Optional editorial photograph, e.g. "/venue.jpg" (place the file in /static).
   image: "",
 };
-
-export interface Accommodation {
-  id: string;
-  name: string;
-  distance: string;
-  description: string;
-  email: string;
-  phone?: string;
-  url: string;
-  group: "recommended" | "nearby";
-  promotion?: string;
-}
-
-export const accommodations: Accommodation[] = [
-  {
-    id: "kunjani-villas",
-    name: "Kunjani Villas",
-    distance: "Approx. 10–12 km drive",
-    description: "A selection of unique villas in the heart of the Winelands.",
-    email: "info@kunjani-villas.co.za",
-    url: "https://www.kunjani-villas.co.za",
-    group: "recommended",
-    promotion: "20% discount",
-  },
-  {
-    id: "devonvale-golf-wine-estate",
-    name: "Devonvale Golf & Wine Estate",
-    distance: "Approx. 8–10 km drive",
-    description:
-      "A scenic estate on Bottelary Road, Stellenbosch. Limited availability for our wedding dates (31 March – 2 April 2027). Contact reservations for availability.",
-    email: "reservations@devonvale.co.za",
-    phone: "+27 21 888 4700",
-    url: "https://www.devonvale.co.za",
-    group: "recommended",
-  },
-  {
-    id: "fort-simon-estate",
-    name: "Fort Simon Estate",
-    distance: "Approx. 1–2 km drive",
-    description:
-      "Within walking distance of Eikenhof Estate. Their four-bedroom Homestead accommodates up to 8 guests and is available for exclusive self-catering stays (minimum two nights).",
-    email: "IHS@fortsimonevents.co.za",
-    phone: "076 228 7954",
-    url: "https://www.fortsimon.com",
-    group: "recommended",
-  },
-  {
-    id: "belcharto-barn-cottages",
-    name: "Belcharto Barn & Cottages",
-    distance: "Approx. 3–5 km drive",
-    description: "",
-    email: "info@belcharto.co.za",
-    phone: "064 514 0086",
-    url: "https://www.belcharto.co.za",
-    group: "nearby",
-  },
-  {
-    id: "groenvlei-guest-farm",
-    name: "Groenvlei Guest Farm",
-    distance: "Approx. 5–7 km drive",
-    description: "",
-    email: "accommodation@groenvleiguestfarm.co.za",
-    phone: "021 903 6277",
-    url: "https://groenvlei.com",
-    group: "nearby",
-  },
-  {
-    id: "mooiplaas-wine-estate",
-    name: "Mooiplaas Wine Estate",
-    distance: "Approx. 7–9 km drive",
-    description: "",
-    email: "info@mooiplaas.co.za",
-    phone: "021 200 7493",
-    url: "https://mooiplaas.co.za",
-    group: "nearby",
-  },
-  {
-    id: "vine-guest-house",
-    name: "Vine Guest House",
-    distance: "Approx. 4–6 km drive",
-    description: "",
-    email: "info@vineguesthouse.co.za",
-    phone: "021 865 2233",
-    url: "https://vineguesthouse.co.za",
-    group: "nearby",
-  },
-];

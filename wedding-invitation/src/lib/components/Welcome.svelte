@@ -6,7 +6,7 @@
   const notes = [
     `The wedding ceremony and reception will both take place at ${site.venueName}.`,
     'Your invitation link is unique to you. Please do not share it with anyone, as anyone with the link can RSVP on your behalf.',
-    'Further details, including RSVP, accommodation, directions and other useful information, will be available on this website.'
+    'Further details, including RSVP and directions, are available on this website.'
   ];
 </script>
 
@@ -14,7 +14,7 @@
   <div class="mx-auto max-w-2xl text-center" use:reveal>
     <p class="font-script text-5xl text-champagne sm:text-6xl">Our Wedding</p>
     <p class="font-display mt-8 text-2xl leading-relaxed text-ink italic sm:text-3xl">
-      We'd love for you to join us for a relaxed wedding weekend at {site.venueName} in the Cape Winelands.
+      We'd love for you to join us on 1 April 2027 at {site.venueName} in the Cape Winelands.
     </p>
     <Sprig class="mx-auto mt-10 h-5 w-32 text-champagne" />
 
