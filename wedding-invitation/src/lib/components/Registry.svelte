@@ -8,9 +8,7 @@
   let copyMessage = $state('');
   const guestName = $derived(
     $guestStore.guest
-      ? [$guestStore.guest.first_name, $guestStore.guest.partner_first_name]
-          .filter((name): name is string => Boolean(name?.trim()))
-          .join(' & ')
+      ? [$guestStore.guest.first_name, ...$guestStore.guest.partners.map((partner) => partner.first_name)].join(' & ')
       : 'Guest'
   );
   const reference = $derived(`${registry.bankDetails.referencePrefix} ${guestName}`);

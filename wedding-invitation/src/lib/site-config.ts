@@ -20,12 +20,6 @@ export const site = {
   socialImagePath: "/social-preview.jpg",
 };
 
-export const rsvpDeadlines = {
-  vip: "30 November",
-  standard: "31 December",
-  extra: "31 January",
-} as const;
-
 export const registry = {
   yuppiechefUrl: "https://yuppiechef.com/yc9904838",
   title: "Honeymoon Fund",
@@ -113,10 +107,10 @@ export const weekend = [
     id: "arrival",
     day: "Wednesday",
     date: "31 March",
-    title: "Arrive & Settle In",
+    title: "An Evening Before the Wedding",
     description:
-      "A relaxed, informal evening for guests arriving at Eikenhof Estate: a chance to meet, unwind and enjoy the surroundings.",
-    note: "Evening plans to be confirmed",
+      "We would love for you to join us for an evening of good food, drinks and wonderful company as we celebrate ahead of our special day. A meal will be provided, with a cash bar available for those wishing to enjoy a drink. We look forward to spending the evening with you.",
+    note: "",
   },
   {
     id: "wedding",

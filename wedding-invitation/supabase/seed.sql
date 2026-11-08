@@ -2,8 +2,12 @@
 -- Safe to run multiple times (guest_code is unique, so re-running will error
 -- on conflict — delete existing test rows first if you need to re-seed).
 
-INSERT INTO guests (first_name, last_name, email, guest_code, guest_type, guest_allowance)
+INSERT INTO guests (first_name, whatsapp_number, guest_code)
 VALUES
-  ('Test', 'Guest', 'test.guest@example.com', 'TEST1234', 'standard', 2),
-  ('VIP', 'Guest', 'vip.guest@example.com', 'VIP1234', 'vip', 2)
+  ('Test', '0820000000', 'TEST1234'),
+  ('VIP', '0820000001', 'VIP1234')
 ON CONFLICT (guest_code) DO NOTHING;
+
+INSERT INTO guest_partners (guest_id, first_name, sort_order)
+SELECT id, 'Partner', 1 FROM guests WHERE guest_code = 'TEST1234'
+ON CONFLICT (guest_id, sort_order) DO NOTHING;

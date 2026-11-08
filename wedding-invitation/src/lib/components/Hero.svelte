@@ -12,8 +12,8 @@
   // "Nevesh & Tracey" when a partner was added by the admin, otherwise just "Nevesh".
   let invitationText = $derived(
     guest
-      ? guest.partner_first_name
-        ? `${guest.first_name} & ${guest.partner_first_name}`
+      ? guest.partners.length
+        ? `${guest.first_name} & ${guest.partners.map((partner) => partner.first_name).join(' & ')}`
         : guest.first_name
       : null
   );

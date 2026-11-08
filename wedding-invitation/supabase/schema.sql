@@ -1,73 +1,26 @@
 CREATE TABLE IF NOT EXISTS guests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  email TEXT,
-  phone TEXT,
   whatsapp_number TEXT,
-  guest_code TEXT UNIQUE,
-  guest_type TEXT NOT NULL DEFAULT 'standard' CHECK (guest_type IN ('standard', 'vip', 'family', 'wedding_party', 'extra')),
-  guest_allowance INTEGER NOT NULL DEFAULT 1 CHECK (guest_allowance >= 1),
-  rsvp_status TEXT DEFAULT 'pending' CHECK (rsvp_status IN ('pending', 'attending', 'declining', 'notified')),
-  dietary_notes TEXT,
+  guest_code TEXT UNIQUE NOT NULL,
   invite_sent_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE guests DROP CONSTRAINT IF EXISTS guests_guest_type_check;
-ALTER TABLE guests ADD CONSTRAINT guests_guest_type_check
-  CHECK (guest_type IN ('standard', 'vip', 'family', 'wedding_party', 'extra'));
-
--- Safe to re-run on an existing database that was created before these columns existed.
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS whatsapp_number TEXT;
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS invite_sent_at TIMESTAMPTZ;
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS guest_allowance INTEGER;
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'guests' AND column_name = 'plus_one_allowed'
-  ) THEN
-    EXECUTE 'UPDATE guests SET guest_allowance = CASE WHEN plus_one_allowed THEN 2 ELSE 1 END WHERE guest_allowance IS NULL';
-  ELSE
-    UPDATE guests SET guest_allowance = 1 WHERE guest_allowance IS NULL;
-  END IF;
-END;
-$$;
-ALTER TABLE guests ALTER COLUMN guest_allowance SET DEFAULT 1;
-ALTER TABLE guests ALTER COLUMN guest_allowance SET NOT NULL;
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'guests_guest_allowance_positive') THEN
-    ALTER TABLE guests ADD CONSTRAINT guests_guest_allowance_positive CHECK (guest_allowance >= 1);
-  END IF;
-END;
-$$;
-
--- Wedding weekend planner: accommodation tracking + attendance for the
--- Friday welcome supper and Sunday farewell breakfast (separate from the
--- main Saturday wedding RSVP in the `rsvps` table).
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_type TEXT CHECK (accommodation_type IN ('estate', 'guesthouse', 'own'));
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_name TEXT;
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS room_nights INTEGER;
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS accommodation_confirmed BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS friday_supper_status TEXT NOT NULL DEFAULT 'pending' CHECK (friday_supper_status IN ('pending', 'attending', 'declining'));
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS sunday_breakfast_status TEXT NOT NULL DEFAULT 'pending' CHECK (sunday_breakfast_status IN ('pending', 'attending', 'declining'));
-
--- Partner (couple invitations): when a partner is set, the guest automatically
--- gets a plus-one and the invitation greets "Guest & Partner".
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_first_name TEXT;
-ALTER TABLE guests ADD COLUMN IF NOT EXISTS partner_last_name TEXT;
-UPDATE guests SET guest_allowance = GREATEST(guest_allowance, 2)
-WHERE NULLIF(trim(partner_first_name), '') IS NOT NULL;
+CREATE TABLE IF NOT EXISTS guest_partners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  guest_id UUID NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
+  first_name TEXT NOT NULL,
+  sort_order SMALLINT NOT NULL CHECK (sort_order BETWEEN 1 AND 3),
+  UNIQUE (guest_id, sort_order)
+);
 
 CREATE TABLE IF NOT EXISTS rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   guest_id UUID NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
   attending BOOLEAN NOT NULL,
-  guest_count INTEGER NOT NULL DEFAULT 1,
-  plus_one_name TEXT,
+  guest_count INTEGER NOT NULL DEFAULT 0 CHECK (guest_count >= 0),
   dietary_requirements TEXT,
   song_request TEXT,
   notes TEXT,
@@ -75,6 +28,15 @@ CREATE TABLE IF NOT EXISTS rsvps (
   confirmation_email_sent BOOLEAN NOT NULL DEFAULT false,
   UNIQUE (guest_id)
 );
+
+CREATE TABLE IF NOT EXISTS rsvp_partner_attendance (
+  rsvp_id UUID NOT NULL REFERENCES rsvps(id) ON DELETE CASCADE,
+  partner_id UUID NOT NULL REFERENCES guest_partners(id) ON DELETE CASCADE,
+  PRIMARY KEY (rsvp_id, partner_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_partners_guest_id ON guest_partners(guest_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_rsvp_partner_attendance_partner_id ON rsvp_partner_attendance(partner_id);
 
 CREATE TABLE IF NOT EXISTS comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -206,6 +168,8 @@ CREATE INDEX IF NOT EXISTS idx_planner_seating_seats_table ON planner_seating_se
 
 ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rsvps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE guest_partners ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rsvp_partner_attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gallery_photos ENABLE ROW LEVEL SECURITY;
@@ -294,18 +258,17 @@ CREATE POLICY "Admin can delete guest photos" ON guest_photos
 -- The browser can look up only the invitation associated with a code.
 DROP FUNCTION IF EXISTS find_guest_by_code(TEXT);
 CREATE OR REPLACE FUNCTION find_guest_by_code(p_code TEXT)
-RETURNS TABLE (
-  id UUID, first_name TEXT, last_name TEXT, guest_type TEXT,
-  guest_allowance INTEGER, partner_first_name TEXT, partner_last_name TEXT,
-  rsvp_status TEXT, dietary_notes TEXT, accommodation_name TEXT,
-  room_nights INTEGER, accommodation_confirmed BOOLEAN
-)
+RETURNS TABLE (id UUID, first_name TEXT, partners JSONB)
 LANGUAGE sql SECURITY DEFINER SET search_path = public
 AS $$
-  SELECT g.id, g.first_name, g.last_name, g.guest_type, g.guest_allowance,
-         NULLIF(trim(g.partner_first_name), ''), NULLIF(trim(g.partner_last_name), ''),
-         g.rsvp_status, g.dietary_notes, g.accommodation_name, g.room_nights,
-         g.accommodation_confirmed
+  SELECT g.id, g.first_name,
+         COALESCE((
+           SELECT jsonb_agg(
+             jsonb_build_object('id', p.id, 'first_name', p.first_name, 'sort_order', p.sort_order)
+             ORDER BY p.sort_order
+           )
+           FROM guest_partners p WHERE p.guest_id = g.id
+         ), '[]'::jsonb)
   FROM guests g
   WHERE g.guest_code = upper(trim(p_code))
   LIMIT 1;
@@ -319,11 +282,12 @@ GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;
 -- ---------------------------------------------------------------------------
 -- Validates the guest code server-side, then upserts the guest's RSVP.
 -- The anon key can never write to rsvps/guests directly, only via this path.
+DROP FUNCTION IF EXISTS submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION submit_rsvp(
   p_guest_code TEXT,
   p_attending BOOLEAN,
+  p_attending_partner_ids UUID[],
   p_guest_count INTEGER,
-  p_plus_one_name TEXT,
   p_dietary_requirements TEXT,
   p_song_request TEXT,
   p_notes TEXT
@@ -335,9 +299,10 @@ SET search_path = public
 AS $$
 DECLARE
   v_guest_id UUID;
-  v_guest_allowance INTEGER;
+  v_rsvp_id UUID;
+  v_partner_ids UUID[] := COALESCE(p_attending_partner_ids, ARRAY[]::UUID[]);
 BEGIN
-  SELECT id, guest_allowance INTO v_guest_id, v_guest_allowance
+  SELECT id INTO v_guest_id
   FROM guests
   WHERE guest_code = upper(trim(p_guest_code));
 
@@ -346,39 +311,58 @@ BEGIN
     RETURN;
   END IF;
 
-  IF p_attending AND (p_guest_count IS NULL OR p_guest_count < 1 OR p_guest_count > v_guest_allowance) THEN
-    RETURN QUERY SELECT false, 'Attendance count exceeds the invitation allowance';
+  IF cardinality(v_partner_ids) > 3
+     OR (NOT p_attending AND cardinality(v_partner_ids) > 0)
+     OR cardinality(v_partner_ids) <> (
+       SELECT count(DISTINCT selected.id) FROM unnest(v_partner_ids) selected(id)
+     )
+     OR (p_attending AND (
+       p_guest_count IS NULL
+       OR p_guest_count < 1
+       OR p_guest_count > 4
+       OR p_guest_count <> 1 + cardinality(v_partner_ids)
+     ))
+     OR EXISTS (
+       SELECT 1 FROM unnest(v_partner_ids) selected(id)
+       WHERE NOT EXISTS (
+         SELECT 1 FROM guest_partners p
+         WHERE p.id = selected.id AND p.guest_id = v_guest_id
+       )
+     ) THEN
+    RETURN QUERY SELECT false, 'Invalid partner attendance selection';
     RETURN;
   END IF;
 
   INSERT INTO rsvps (
-    guest_id, attending, guest_count, plus_one_name,
+    guest_id, attending, guest_count,
     dietary_requirements, song_request, notes, submitted_at
   )
   VALUES (
-    v_guest_id, p_attending, GREATEST(COALESCE(p_guest_count, 1), 1), p_plus_one_name,
+    v_guest_id, p_attending,
+    CASE WHEN p_attending THEN p_guest_count ELSE 0 END,
     p_dietary_requirements, p_song_request, p_notes, NOW()
   )
   ON CONFLICT (guest_id) DO UPDATE SET
     attending = EXCLUDED.attending,
     guest_count = EXCLUDED.guest_count,
-    plus_one_name = EXCLUDED.plus_one_name,
     dietary_requirements = EXCLUDED.dietary_requirements,
     song_request = EXCLUDED.song_request,
     notes = EXCLUDED.notes,
-    submitted_at = NOW();
+    submitted_at = NOW()
+  RETURNING id INTO v_rsvp_id;
 
-  UPDATE guests
-  SET rsvp_status = CASE WHEN p_attending THEN 'attending' ELSE 'declining' END,
-      updated_at = NOW()
-  WHERE id = v_guest_id;
+  DELETE FROM rsvp_partner_attendance WHERE rsvp_id = v_rsvp_id;
+  IF p_attending AND cardinality(v_partner_ids) > 0 THEN
+    INSERT INTO rsvp_partner_attendance (rsvp_id, partner_id)
+    SELECT v_rsvp_id, unnest(v_partner_ids);
+  END IF;
 
   RETURN QUERY SELECT true, 'RSVP saved';
 END;
 $$;
 
-REVOKE ALL ON FUNCTION submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+REVOKE ALL ON FUNCTION submit_rsvp(TEXT, BOOLEAN, UUID[], INTEGER, TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION submit_rsvp(TEXT, BOOLEAN, UUID[], INTEGER, TEXT, TEXT, TEXT) TO anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Admin access (guest list management + WhatsApp invite sending)
@@ -403,6 +387,17 @@ CREATE POLICY "Admin can update guests" ON guests
 DROP POLICY IF EXISTS "Admin can delete guests" ON guests;
 CREATE POLICY "Admin can delete guests" ON guests
   FOR DELETE TO authenticated USING (is_admin());
+
+DROP POLICY IF EXISTS "Admin can manage guest partners" ON guest_partners;
+CREATE POLICY "Admin can manage guest partners" ON guest_partners
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admin can read RSVP partner attendance" ON rsvp_partner_attendance;
+CREATE POLICY "Admin can read RSVP partner attendance" ON rsvp_partner_attendance
+  FOR SELECT TO authenticated USING (is_admin());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON guest_partners TO authenticated;
+GRANT SELECT ON rsvp_partner_attendance TO authenticated;
 
 DROP POLICY IF EXISTS "Admin can read rsvps" ON rsvps;
 CREATE POLICY "Admin can read rsvps" ON rsvps

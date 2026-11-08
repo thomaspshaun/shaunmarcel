@@ -8,21 +8,27 @@
   let loadError = $state('');
 
   let summary = $derived.by(() => {
-    const totalInvited = guests.length;
+    const totalInvited = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
     const attending = rsvps.filter((r) => r.attending);
     const declining = rsvps.filter((r) => !r.attending);
-    const responded = rsvps.length;
+    const responded = rsvps.reduce((sum, rsvp) => {
+      const guest = guests.find((item) => item.id === rsvp.guest_id);
+      return sum + (guest ? 1 + guest.partners.length : 0);
+    }, 0);
     const pending = totalInvited - responded;
     const totalAttendingGuests = attending.reduce((sum, r) => sum + (r.guest_count ?? 1), 0);
+    const decliningCount = declining.reduce((sum, rsvp) => {
+      const guest = guests.find((item) => item.id === rsvp.guest_id);
+      return sum + (guest ? 1 + guest.partners.length : 0);
+    }, 0);
     const withDietary = rsvps.filter((r) => r.dietary_requirements?.trim()).length;
 
     return {
       totalInvited,
       responded,
       pending: Math.max(pending, 0),
-      attendingCount: attending.length,
-      decliningCount: declining.length,
-      totalAttendingGuests,
+      attendingCount: totalAttendingGuests,
+      decliningCount,
       withDietary
     };
   });
@@ -33,21 +39,38 @@
     loading = true;
     loadError = '';
 
-    const [guestsRes, rsvpsRes] = await Promise.all([
-      supabase.from('guests').select('*'),
-      supabase.from('rsvps').select('*, guests(first_name, last_name, guest_type)').order('submitted_at', { ascending: false })
+    const [guestsRes, rsvpsRes, attendanceRes] = await Promise.all([
+      supabase.from('guests').select('*, partners:guest_partners(id, first_name, sort_order)'),
+      supabase.from('rsvps').select('*, guests(first_name)').order('submitted_at', { ascending: false }),
+      supabase.from('rsvp_partner_attendance').select('rsvp_id, partner:guest_partners(id, first_name)')
     ]);
 
     if (guestsRes.error) {
       loadError = guestsRes.error.message;
     } else {
-      guests = guestsRes.data as GuestRecord[];
+      guests = (guestsRes.data as GuestRecord[]).map((guest) => ({
+        ...guest,
+        partners: [...(guest.partners ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+      }));
     }
 
     if (rsvpsRes.error) {
       loadError = rsvpsRes.error.message;
+    } else if (attendanceRes.error) {
+      loadError = attendanceRes.error.message;
     } else {
-      rsvps = rsvpsRes.data as unknown as RsvpRecord[];
+      const attendanceRows = attendanceRes.data as {
+        rsvp_id: string;
+        partner: { id: string; first_name: string }[];
+      }[];
+      const partnersByRsvp = new Map<string, { id: string; first_name: string }[]>();
+      for (const row of attendanceRows) {
+        partnersByRsvp.set(row.rsvp_id, [...(partnersByRsvp.get(row.rsvp_id) ?? []), ...row.partner]);
+      }
+      rsvps = (rsvpsRes.data as unknown as RsvpRecord[]).map((rsvp) => ({
+        ...rsvp,
+        attending_partners: partnersByRsvp.get(rsvp.id) ?? []
+      }));
     }
 
     loading = false;
@@ -58,27 +81,27 @@
 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
   <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
     <p class="text-2xl font-semibold text-slate-900">{summary.totalInvited}</p>
-    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Invited</p>
+    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">People Invited</p>
   </div>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
     <p class="text-2xl font-semibold text-slate-900">{summary.responded}</p>
-    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Responded</p>
+    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">People Responded</p>
   </div>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
     <p class="text-2xl font-semibold text-amber-600">{summary.pending}</p>
-    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Pending</p>
+    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">People Pending</p>
   </div>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
     <p class="text-2xl font-semibold text-green-600">{summary.attendingCount}</p>
-    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Attending RSVPs</p>
+    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Attending People</p>
   </div>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-    <p class="text-2xl font-semibold text-rose-600">{summary.totalAttendingGuests}</p>
-    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Total Attending</p>
+    <p class="text-2xl font-semibold text-rose-600">{summary.decliningCount}</p>
+    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Declined People</p>
   </div>
   <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
     <p class="text-2xl font-semibold text-slate-900">{summary.withDietary}</p>
-    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Needs</p>
+    <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Responses</p>
   </div>
 </div>
 
@@ -105,7 +128,7 @@
             <th class="px-4 py-3">Name</th>
             <th class="px-4 py-3">Response</th>
             <th class="px-4 py-3">Guests</th>
-            <th class="px-4 py-3">Plus One</th>
+            <th class="px-4 py-3">Partners attending</th>
             <th class="px-4 py-3">Dietary</th>
             <th class="px-4 py-3">Song Request</th>
             <th class="px-4 py-3">Notes</th>
@@ -116,7 +139,7 @@
           {#each rsvps as rsvp (rsvp.id)}
             <tr>
               <td class="px-4 py-3 font-medium whitespace-nowrap text-slate-900">
-                {rsvp.guests ? `${rsvp.guests.first_name} ${rsvp.guests.last_name}` : 'Unknown guest'}
+                {rsvp.guests ? rsvp.guests.first_name : 'Unknown guest'}
               </td>
               <td class="px-4 py-3">
                 <span
@@ -128,7 +151,9 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-slate-600">{rsvp.attending ? rsvp.guest_count : '—'}</td>
-              <td class="px-4 py-3 text-slate-600">{rsvp.plus_one_name || '—'}</td>
+              <td class="px-4 py-3 text-slate-600">
+                {rsvp.attending_partners?.map((partner) => partner.first_name).join(', ') || '—'}
+              </td>
               <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.dietary_requirements || '—'}</td>
               <td class="px-4 py-3 max-w-[12rem] text-slate-600">{rsvp.song_request || '—'}</td>
               <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.notes || '—'}</td>
