@@ -13,7 +13,6 @@
   let guest = $state<GuestLookupResult | null>(null);
   let attending = $state(true);
   let attendingPartnerIds = $state<string[]>([]);
-  let guestCount = $state(1);
   let totalAttending = $derived(attending ? 1 + attendingPartnerIds.length : 0);
   let dietaryRequirements = $state('');
   let songRequest = $state('');
@@ -48,7 +47,6 @@
 
       guest = result;
       attendingPartnerIds = result.partners.map((partner) => partner.id);
-      guestCount = 1 + result.partners.length;
       dietaryRequirements = '';
       step = 'form';
     } catch (err) {
@@ -61,11 +59,6 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     if (!guest) return;
-    if (attending && guestCount !== 1 + attendingPartnerIds.length) {
-      submitError = 'Please enter the exact number attending, including yourself and the partners you selected.';
-      return;
-    }
-
     submitLoading = true;
     submitError = '';
 
@@ -74,7 +67,7 @@
         guestCode: code,
         attending,
         partnerIds: attending ? attendingPartnerIds : [],
-        guestCount,
+        guestCount: totalAttending,
         dietaryRequirements: attending ? dietaryRequirements : '',
         songRequest: attending ? songRequest : '',
         notes
@@ -93,7 +86,6 @@
     guest = null;
     attending = true;
     attendingPartnerIds = [];
-    guestCount = 1;
     dietaryRequirements = '';
     songRequest = '';
     notes = '';
@@ -183,7 +175,6 @@
                       attendingPartnerIds = event.currentTarget.checked
                         ? [...attendingPartnerIds, partner.id]
                         : attendingPartnerIds.filter((id) => id !== partner.id);
-                      guestCount = 1 + attendingPartnerIds.length;
                     }}
                     class="h-4 w-4 accent-sage"
                   />
@@ -192,24 +183,8 @@
               {/each}
             </fieldset>
           {/if}
-          {#if guest.partners.length > attendingPartnerIds.length}
-            <div>
-              <label class="block text-sm font-medium text-ink" for="guest-count">
-                Confirm the exact total attending, including yourself
-              </label>
-              <input
-                id="guest-count"
-                type="number"
-                min="1"
-                max={1 + guest.partners.length}
-                bind:value={guestCount}
-                required
-                class="mt-2 w-full rounded-none border border-line px-4 py-3 text-base text-ink focus:border-sage focus:outline-none"
-              />
-            </div>
-          {/if}
           <p class="text-sm text-muted" aria-live="polite">
-            Total attending, including you: <strong class="text-ink">{totalAttending}</strong>
+            Confirmed attending, including you: <strong class="text-ink">{totalAttending}</strong>
           </p>
 
           <div>
