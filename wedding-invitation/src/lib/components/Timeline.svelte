@@ -7,7 +7,6 @@
   const weddingDayInfo = {
     day: 'Thursday',
     date: '1 April',
-    title: 'Our Wedding Day',
     description: 'Join us for the ceremony and reception at Eikenhof Estate.'
   };
   const calendarEvent: CalendarEvent = {
@@ -62,7 +61,6 @@
       <header class="text-center">
         <p class="eyebrow">{weddingDayInfo.day}</p>
         <p class="mt-1 text-[0.68rem] uppercase tracking-[0.28em] text-muted">{weddingDayInfo.date} 2027</p>
-        <h3 class="font-display mt-5 text-4xl font-light text-ink sm:text-5xl">{weddingDayInfo.title}</h3>
         <p class="lede mx-auto mt-4 max-w-md text-sm sm:text-base">{weddingDayInfo.description}</p>
       </header>
 
