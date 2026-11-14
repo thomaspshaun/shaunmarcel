@@ -7,8 +7,8 @@
 
   const GALLERY_BUCKET = 'gallery';
   const GUEST_PHOTOS_BUCKET = 'guest-photos';
-  const GUEST_COUNT_WARNING_THRESHOLD = 95;
-  const GUEST_COUNT_LIMIT = 100;
+  const RSVP_YES_WARNING_THRESHOLD = 95;
+  const RSVP_YES_LIMIT = 100;
 
   let session: Session | null = $state(null);
   let authLoading = $state(true);
@@ -366,12 +366,8 @@
 
   async function importGuestCsv() {
     if (!guestCsvRows.length || importingGuests) return;
-    const additionalPeople = guestCsvRows.reduce(
-      (sum, row) => sum + 1 + row.partnerNames.length,
-      0
-    );
-    if (summary.totalInvited + additionalPeople > GUEST_COUNT_LIMIT) {
-      guestCsvError = `This import would bring the total to ${summary.totalInvited + additionalPeople} people. The limit is ${GUEST_COUNT_LIMIT}.`;
+    if (summary.attendingCount >= RSVP_YES_LIMIT) {
+      guestCsvError = `Guest additions are blocked because ${RSVP_YES_LIMIT} or more people have RSVP'd yes.`;
       return;
     }
 
@@ -437,8 +433,8 @@
       addGuestError = 'A guest can have up to 3 invited partners.';
       return;
     }
-    if (summary.totalInvited + 1 + partnerNames.length > GUEST_COUNT_LIMIT) {
-      addGuestError = `Adding this invitation would exceed the ${GUEST_COUNT_LIMIT}-person limit.`;
+    if (summary.attendingCount >= RSVP_YES_LIMIT) {
+      addGuestError = `Guest additions are blocked because ${RSVP_YES_LIMIT} or more people have RSVP'd yes.`;
       return;
     }
 
@@ -485,9 +481,8 @@
       guestsError = 'A guest can have up to 3 invited partners.';
       return;
     }
-    const updatedTotal = summary.totalInvited - guest.partners.length + names.length;
-    if (updatedTotal > GUEST_COUNT_LIMIT) {
-      guestsError = `This change would exceed the ${GUEST_COUNT_LIMIT}-person limit.`;
+    if (summary.attendingCount >= RSVP_YES_LIMIT && names.length > guest.partners.length) {
+      guestsError = `Adding partners is blocked because ${RSVP_YES_LIMIT} or more people have RSVP'd yes.`;
       return;
     }
 
@@ -690,9 +685,9 @@
         <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Responses</p>
       </div>
     </div>
-    {#if summary.totalInvited > GUEST_COUNT_WARNING_THRESHOLD}
+    {#if summary.attendingCount >= RSVP_YES_WARNING_THRESHOLD}
       <p class="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
-        Guest list warning: {summary.totalInvited} people are invited, including partners. The recommended threshold is {GUEST_COUNT_WARNING_THRESHOLD}; the hard limit is {GUEST_COUNT_LIMIT}.
+        RSVP warning: {summary.attendingCount} people have RSVP'd yes, including attending partners. The warning threshold is {RSVP_YES_WARNING_THRESHOLD}; guest additions are blocked at {RSVP_YES_LIMIT}.
       </p>
     {/if}
 
@@ -726,7 +721,7 @@
           {/if}
           <button
             type="submit"
-            disabled={addingGuest}
+            disabled={addingGuest || summary.attendingCount >= RSVP_YES_LIMIT}
             class="rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {addingGuest ? 'Adding...' : 'Add Guest'}
@@ -761,7 +756,7 @@
         <button
           type="button"
           onclick={importGuestCsv}
-          disabled={importingGuests}
+          disabled={importingGuests || summary.attendingCount >= RSVP_YES_LIMIT}
           class="mt-4 rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {importingGuests ? 'Importing...' : `Import ${guestCsvRows.length} guests`}
