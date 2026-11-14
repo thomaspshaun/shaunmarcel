@@ -2,10 +2,13 @@
   import { onMount } from 'svelte';
   import { supabase, type GuestRecord, type RsvpRecord, type GalleryPhoto, type GuestPhoto } from '$lib/supabase';
   import { buildWhatsappLink } from '$lib/utils/whatsapp';
+  import { parseGuestCsv, type GuestCsvRow } from '$lib/utils/guestCsv';
   import type { Session } from '@supabase/supabase-js';
 
   const GALLERY_BUCKET = 'gallery';
   const GUEST_PHOTOS_BUCKET = 'guest-photos';
+  const GUEST_COUNT_WARNING_THRESHOLD = 95;
+  const GUEST_COUNT_LIMIT = 100;
 
   let session: Session | null = $state(null);
   let authLoading = $state(true);
@@ -47,6 +50,11 @@
   let newWhatsapp = $state('');
   let addingGuest = $state(false);
   let addGuestError = $state('');
+  let guestCsvRows: GuestCsvRow[] = $state([]);
+  let guestCsvFileName = $state('');
+  let guestCsvError = $state('');
+  let guestCsvMessage = $state('');
+  let importingGuests = $state(false);
 
   let summary = $derived.by(() => {
     const totalInvited = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
@@ -337,6 +345,89 @@
     return out;
   }
 
+  async function handleGuestCsvSelected(event: Event) {
+    const file = (event.currentTarget as HTMLInputElement).files?.[0];
+    guestCsvRows = [];
+    guestCsvFileName = file?.name ?? '';
+    guestCsvError = '';
+    guestCsvMessage = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      guestCsvError = 'Choose a .csv file.';
+      return;
+    }
+
+    try {
+      guestCsvRows = parseGuestCsv(await file.text());
+    } catch (error) {
+      guestCsvError = error instanceof Error ? error.message : 'Could not read the CSV file.';
+    }
+  }
+
+  async function importGuestCsv() {
+    if (!guestCsvRows.length || importingGuests) return;
+    const additionalPeople = guestCsvRows.reduce(
+      (sum, row) => sum + 1 + row.partnerNames.length,
+      0
+    );
+    if (summary.totalInvited + additionalPeople > GUEST_COUNT_LIMIT) {
+      guestCsvError = `This import would bring the total to ${summary.totalInvited + additionalPeople} people. The limit is ${GUEST_COUNT_LIMIT}.`;
+      return;
+    }
+
+    importingGuests = true;
+    guestCsvError = '';
+    guestCsvMessage = '';
+    let imported = 0;
+    const failures: string[] = [];
+
+    for (const row of guestCsvRows) {
+      const { data: guest, error: guestError } = await supabase
+        .from('guests')
+        .insert({
+          first_name: row.firstName,
+          whatsapp_number: row.whatsappNumber,
+          guest_code: generateGuestCode()
+        })
+        .select('id')
+        .single();
+
+      if (guestError) {
+        failures.push(`Row ${row.rowNumber} (${row.firstName}): ${guestError.message}`);
+        continue;
+      }
+
+      if (row.partnerNames.length) {
+        const { error: partnerError } = await supabase.from('guest_partners').insert(
+          row.partnerNames.map((first_name, index) => ({
+            guest_id: guest.id,
+            first_name,
+            sort_order: index + 1
+          }))
+        );
+        if (partnerError) {
+          const { error: cleanupError } = await supabase.from('guests').delete().eq('id', guest.id);
+          failures.push(
+            `Row ${row.rowNumber} (${row.firstName}): partner save failed: ${partnerError.message}${
+              cleanupError ? `; guest cleanup failed: ${cleanupError.message}` : ''
+            }`
+          );
+          continue;
+        }
+      }
+      imported += 1;
+    }
+
+    guestCsvMessage = `Imported ${imported} of ${guestCsvRows.length} guest${guestCsvRows.length === 1 ? '' : 's'}.`;
+    if (failures.length) guestCsvError = failures.join('\n');
+    await loadGuests();
+    guestCsvRows = [];
+    guestCsvFileName = '';
+    const fileInput = document.getElementById('guest-csv-file');
+    if (fileInput instanceof HTMLInputElement) fileInput.value = '';
+    importingGuests = false;
+  }
+
   async function handleAddGuest(e: Event) {
     e.preventDefault();
     if (!newFirstName.trim()) return;
@@ -344,6 +435,10 @@
     const partnerNames = newPartners.split(',').map((name) => name.trim()).filter(Boolean);
     if (partnerNames.length > 3) {
       addGuestError = 'A guest can have up to 3 invited partners.';
+      return;
+    }
+    if (summary.totalInvited + 1 + partnerNames.length > GUEST_COUNT_LIMIT) {
+      addGuestError = `Adding this invitation would exceed the ${GUEST_COUNT_LIMIT}-person limit.`;
       return;
     }
 
@@ -388,6 +483,11 @@
     const names = value.split(',').map((name) => name.trim()).filter(Boolean);
     if (names.length > 3) {
       guestsError = 'A guest can have up to 3 invited partners.';
+      return;
+    }
+    const updatedTotal = summary.totalInvited - guest.partners.length + names.length;
+    if (updatedTotal > GUEST_COUNT_LIMIT) {
+      guestsError = `This change would exceed the ${GUEST_COUNT_LIMIT}-person limit.`;
       return;
     }
 
@@ -590,6 +690,11 @@
         <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Responses</p>
       </div>
     </div>
+    {#if summary.totalInvited > GUEST_COUNT_WARNING_THRESHOLD}
+      <p class="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+        Guest list warning: {summary.totalInvited} people are invited, including partners. The recommended threshold is {GUEST_COUNT_WARNING_THRESHOLD}; the hard limit is {GUEST_COUNT_LIMIT}.
+      </p>
+    {/if}
 
     <!-- Add guest -->
     <div class="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -628,6 +733,46 @@
           </button>
         </div>
       </form>
+    </div>
+
+    <div class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-medium text-slate-900">Bulk Import Guests</h2>
+      <p class="mt-1 text-sm text-slate-600">
+        Upload a CSV with one guest per row. Partner names are optional, up to three per guest.
+        Invite codes are generated automatically.
+      </p>
+      <a
+        href="/guest-list-import-template.csv"
+        download
+        class="mt-3 inline-block text-sm font-medium text-rose-600 hover:underline"
+      >Download CSV template</a>
+      <label class="mt-4 block text-sm font-medium text-slate-700" for="guest-csv-file">CSV file</label>
+      <input
+        id="guest-csv-file"
+        type="file"
+        accept=".csv,text/csv"
+        onchange={handleGuestCsvSelected}
+        class="mt-2 block w-full text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-rose-50 file:px-4 file:py-2 file:font-medium file:text-rose-700 hover:file:bg-rose-100"
+      />
+      {#if guestCsvFileName && guestCsvRows.length}
+        <p class="mt-3 text-sm text-slate-600">
+          {guestCsvFileName}: {guestCsvRows.length} guest{guestCsvRows.length === 1 ? '' : 's'} ready to import.
+        </p>
+        <button
+          type="button"
+          onclick={importGuestCsv}
+          disabled={importingGuests}
+          class="mt-4 rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {importingGuests ? 'Importing...' : `Import ${guestCsvRows.length} guests`}
+        </button>
+      {/if}
+      {#if guestCsvMessage}
+        <p class="mt-3 text-sm text-green-700" role="status">{guestCsvMessage}</p>
+      {/if}
+      {#if guestCsvError}
+        <p class="mt-3 whitespace-pre-wrap text-sm text-red-600" role="alert">{guestCsvError}</p>
+      {/if}
     </div>
 
     <!-- Guest list -->
