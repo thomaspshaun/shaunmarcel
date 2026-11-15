@@ -45,11 +45,11 @@
   <Hero />
 
   <Welcome />
-  <WeddingColors />
   <Timeline />
   <VenueMap />
   <RsvpForm />
   <Registry />
+  <WeddingColors />
   <Guestbook />
   <PhotoGallery />
 {:else}
