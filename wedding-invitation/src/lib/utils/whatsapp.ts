@@ -18,7 +18,7 @@ export function buildInviteMessage(
 ): string {
   return (
     `Hi ${firstName}! 🎉\n\n` +
-    `You're invited to ${site.coupleNames}'s wedding! Please visit the link below to view details and RSVP:\n\n` +
+    `You're invited to ${site.coupleNames}'s wedding! Please visit the link below to view details and RSVP by 6 December 2026:\n\n` +
     `${site.siteUrl}/?code=${guestCode}\n\n` +
     `Your invite code: ${guestCode}\n\n` +
     `We can't wait to celebrate with you!`
