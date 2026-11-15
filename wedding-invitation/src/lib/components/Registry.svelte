@@ -36,7 +36,8 @@
     <p class="eyebrow">Gifts</p>
     <h2 class="heading mt-4">Choose an Option</h2>
     <p class="lede mx-auto mt-5 max-w-xl">
-      Your presence is the greatest gift. If you wish, you can choose either of these options.
+      The joy of celebrating with you is the greatest gift of all. If you would like to support
+      our future together, you can find our registry and gifting options below.
     </p>
     <Sprig class="mx-auto mt-6 h-5 w-28 text-champagne" />
 
