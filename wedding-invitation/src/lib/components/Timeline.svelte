@@ -11,24 +11,24 @@
   };
   const calendarEvent: CalendarEvent = {
     title: "Shaun & Marcel's Wedding",
-    description: 'Wedding day programme: arrival and welcome drink from 13:30, ceremony at 14:00.',
+    description: 'Wedding day programme: guests arrive at 14:00, ceremony at 14:30, cocktails at 15:30.',
     location: venue.address,
     start: new Date(scheduleEvents[0].startIso),
     end: new Date(scheduleEvents[scheduleEvents.length - 1].endIso)
   };
   const updatedItinerary = [
     {
-      time: '14:30',
+      time: '14:00',
       title: 'The Guests Arrive',
       description: 'Find your seats, grab a smile and get ready for the celebrations!'
     },
     {
-      time: '15:00',
+      time: '14:30',
       title: 'The “I Do” Moment',
       description: 'The main event! Time for happy tears, big smiles and a little romance.'
     },
     {
-      time: '16:00',
+      time: '15:30',
       title: 'Cocktails, Photos & Good Times',
       description: 'Sip, mingle, strike a pose and enjoy some well-deserved catching up.'
     },

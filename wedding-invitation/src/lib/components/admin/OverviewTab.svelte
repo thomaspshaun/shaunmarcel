@@ -19,8 +19,8 @@
       <p class="text-xs font-semibold tracking-wide text-rose-500 uppercase">Saturday — Wedding Day</p>
       <ul class="mt-2 list-disc space-y-1 pl-4 text-sm text-slate-600">
         <li>Late morning: simple wedding party breakfast.</li>
-        <li>14:00 welcome drinks, 14:30 ceremony (~3:00pm conclude).</li>
-        <li>15:00–16:30 cocktail hour &amp; photos; 16:30 seated; 16:45 entrance.</li>
+        <li>14:00 welcome drinks, 14:30 ceremony (~3:30pm conclude).</li>
+        <li>15:30–16:30 cocktail hour &amp; photos; 16:30 seated; 16:45 entrance.</li>
         <li>Reception: dinner, speeches, dancing until late.</li>
       </ul>
     </div>
