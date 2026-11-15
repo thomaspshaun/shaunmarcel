@@ -15,6 +15,7 @@
     try {
       photos = await fetchGalleryPhotos();
     } catch (err) {
+      console.error('Could not load gallery photos.', err);
       loadError = err instanceof Error ? err.message : "Could not load the gallery.";
     } finally {
       loading = false;
@@ -64,10 +65,10 @@
 
   {#if loading}
     <p class="mt-12 text-center text-sm text-muted">Loading photos…</p>
-  {:else if loadError}
-    <p class="mt-12 text-center text-sm text-sage-dark">{loadError}</p>
-  {:else if photos.length === 0}
-    <p class="mt-12 text-center text-sm text-muted">Photos coming soon.</p>
+  {:else if loadError || photos.length === 0}
+    <p class="mt-12 text-center text-sm text-muted">
+      Love is in the lens! We’re busy capturing the magic and will share our photos here very soon.
+    </p>
   {:else}
     <div class="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
       {#each photos as photo, index (photo.id)}
