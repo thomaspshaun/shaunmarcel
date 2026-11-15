@@ -2,15 +2,16 @@
 
 /* Palette: change these values to re-theme the whole site. */
 :root {
-  --color-background: #fdfdfd;
+  --color-background: #fffdf9;
   --color-background-secondary: #fffbe8;
-  --color-surface: #fdfdfd;
-  --color-text: #3b3835;
-  --color-text-muted: #85796e;
+  --color-surface: #fffdfa;
+  --color-text: #493b30;
+  --color-text-muted: #7d7063;
   --color-primary: #bdc3a7;
   --color-primary-dark: #687052;
   --color-accent: #a67c52;
   --color-border: #d2b48c;
+  --palette-brown: #604936;
 
   --font-display: "Cormorant Garamond", Georgia, serif;
   --font-script: "Parisienne", "Brush Script MT", cursive;
@@ -26,12 +27,15 @@
   --color-sage: var(--color-primary-dark);
   --color-sage-dark: var(--color-primary-dark);
   --color-champagne: var(--color-accent);
+  --color-taupe: var(--color-border);
+  --color-mocca: var(--color-accent);
+  --color-brown: var(--palette-brown);
   --color-line: var(--color-border);
   --font-display: var(--font-display);
   --font-script: var(--font-script);
 }
 @theme {
-  --color-surface: #fdfdfd;
+  --color-surface: #fffdfa;
 }
 
 html {
@@ -61,7 +65,7 @@ img {
   display: block;
 }
 ::selection {
-  background: var(--color-accent);
+  background: var(--color-primary-dark);
   color: var(--color-surface);
 }
 :focus-visible {
@@ -115,13 +119,14 @@ img {
       border-color 0.4s ease;
   }
   .btn {
-    background: var(--color-primary);
-    color: var(--color-text);
+    background: var(--color-primary-dark);
+    color: var(--color-surface);
+    border-color: var(--color-primary-dark);
   }
   .btn:hover {
     color: var(--color-surface);
-    background: var(--color-primary-dark);
-    border-color: var(--color-primary-dark);
+    background: var(--palette-brown);
+    border-color: var(--palette-brown);
   }
   .btn-ghost {
     background: transparent;

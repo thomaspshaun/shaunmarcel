@@ -38,7 +38,12 @@
 
 <div class="site-layout flex min-h-screen flex-col" class:save-date-layout={isSplashPage}>
   {#if !isSplashPage}
-    <div class="invitation-background" aria-hidden="true"></div>
+    <div class="invitation-background" aria-hidden="true">
+      <img src="/invitation-corner-top-left.png" alt="" class="corner-decoration corner-top-left" />
+      <img src="/invitation-corner-top-right.png" alt="" class="corner-decoration corner-top-right" />
+      <img src="/invitation-corner-bottom-left.png" alt="" class="corner-decoration corner-bottom-left" />
+      <img src="/invitation-corner-bottom-right.png" alt="" class="corner-decoration corner-bottom-right" />
+    </div>
   {/if}
   <div class="site-content flex flex-1 flex-col">
     <!-- Nav hidden for now -->
@@ -62,7 +67,38 @@
     inset: 0;
     z-index: 0;
     background: url('/invitation-background.png') center / cover no-repeat;
+    overflow: hidden;
     pointer-events: none;
+  }
+
+  .corner-decoration {
+    position: absolute;
+    width: clamp(4.5rem, 14vw, 12.5rem);
+    height: auto;
+  }
+
+  .corner-top-left {
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+  }
+
+  .corner-top-right {
+    top: 0;
+    right: 0;
+    transform-origin: top right;
+  }
+
+  .corner-bottom-left {
+    bottom: 0;
+    left: 0;
+    transform-origin: bottom left;
+  }
+
+  .corner-bottom-right {
+    right: 0;
+    bottom: 0;
+    transform-origin: bottom right;
   }
 
   .site-content {

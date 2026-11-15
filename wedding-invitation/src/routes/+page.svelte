@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Hero from '$lib/components/Hero.svelte';
   import Welcome from '$lib/components/Welcome.svelte';
+  import WeddingColors from '$lib/components/WeddingColors.svelte';
   import Timeline from '$lib/components/Timeline.svelte';
   import VenueMap from '$lib/components/VenueMap.svelte';
   import RsvpForm from '$lib/components/RsvpForm.svelte';
@@ -48,6 +49,7 @@
   <VenueMap />
   <RsvpForm />
   <Registry />
+  <WeddingColors />
   <Guestbook />
   <PhotoGallery />
 {:else}
