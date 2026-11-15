@@ -4,12 +4,9 @@
   import Welcome from '$lib/components/Welcome.svelte';
   import Timeline from '$lib/components/Timeline.svelte';
   import VenueMap from '$lib/components/VenueMap.svelte';
-  import Accommodations from '$lib/components/Accommodations.svelte';
   import RsvpForm from '$lib/components/RsvpForm.svelte';
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
-  import GuestPhotoUpload from '$lib/components/GuestPhotoUpload.svelte';
-  import GuestLookupModal from '$lib/components/GuestLookupModal.svelte';
   import Registry from '$lib/components/Registry.svelte';
   import SaveTheDateSplash from '$lib/components/SaveTheDateSplash.svelte';
   import { site } from '$lib/site-config';
@@ -39,26 +36,20 @@
 <svelte:head>
   {#if hasVerifiedInvitation}
     <title>{site.coupleNames} — Wedding Invitation</title>
-    <meta name="description" content="{site.coupleNames}'s wedding invitation, RSVP, weekend programme and guest information." />
+    <meta name="description" content="{site.coupleNames}'s wedding day invitation for 1 April 2027, with the ceremony details and RSVP." />
   {/if}
 </svelte:head>
 
 {#if hasVerifiedInvitation}
-  <Hero>
-    {#snippet action()}
-      <GuestLookupModal />
-    {/snippet}
-  </Hero>
+  <Hero />
 
   <Welcome />
   <Timeline />
   <VenueMap />
-  <Accommodations />
   <RsvpForm />
   <Registry />
-  <PhotoGallery />
   <Guestbook />
-  <GuestPhotoUpload />
+  <PhotoGallery />
 {:else}
   <SaveTheDateSplash />
 {/if}

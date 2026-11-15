@@ -2,10 +2,13 @@
   import { onMount } from 'svelte';
   import { supabase, type GuestRecord, type RsvpRecord, type GalleryPhoto, type GuestPhoto } from '$lib/supabase';
   import { buildWhatsappLink } from '$lib/utils/whatsapp';
+  import { parseGuestCsv, type GuestCsvRow } from '$lib/utils/guestCsv';
   import type { Session } from '@supabase/supabase-js';
 
   const GALLERY_BUCKET = 'gallery';
   const GUEST_PHOTOS_BUCKET = 'guest-photos';
+  const RSVP_YES_WARNING_THRESHOLD = 95;
+  const RSVP_YES_LIMIT = 100;
 
   let session: Session | null = $state(null);
   let authLoading = $state(true);
@@ -43,28 +46,39 @@
 
   // Add-guest form state
   let newFirstName = $state('');
-  let newLastName = $state('');
+  let newPartners = $state('');
   let newWhatsapp = $state('');
-  let newGuestType = $state('standard');
-  let newGuestAllowance = $state(1);
   let addingGuest = $state(false);
   let addGuestError = $state('');
+  let guestCsvRows: GuestCsvRow[] = $state([]);
+  let guestCsvFileName = $state('');
+  let guestCsvError = $state('');
+  let guestCsvMessage = $state('');
+  let importingGuests = $state(false);
 
   let summary = $derived.by(() => {
-    const totalInvited = guests.length;
+    const totalInvited = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
     const attending = rsvps.filter((r) => r.attending);
-    const declining = rsvps.filter((r) => !r.attending);
-    const responded = rsvps.length;
+    const responded = rsvps.reduce((sum, rsvp) => {
+      const invite = guests.find((guest) => guest.id === rsvp.guest_id);
+      return sum + (invite ? 1 + invite.partners.length : 0);
+    }, 0);
     const pending = totalInvited - responded;
     const totalAttendingGuests = attending.reduce((sum, r) => sum + (r.guest_count ?? 1), 0);
+    const totalDecliningGuests = rsvps.reduce((sum, rsvp) => {
+      const invite = guests.find((guest) => guest.id === rsvp.guest_id);
+      if (!invite) return sum;
+      const attendingPartners = rsvp.attending_partners?.length ?? 0;
+      return sum + Number(!rsvp.guest_attending) + invite.partners.length - attendingPartners;
+    }, 0);
     const withDietary = rsvps.filter((r) => r.dietary_requirements?.trim()).length;
 
     return {
       totalInvited,
       responded,
       pending: Math.max(pending, 0),
-      attendingCount: attending.length,
-      decliningCount: declining.length,
+      attendingCount: totalAttendingGuests,
+      decliningCount: totalDecliningGuests,
       totalAttendingGuests,
       withDietary
     };
@@ -173,13 +187,16 @@
 
     const { data, error } = await supabase
       .from('guests')
-      .select('*')
+      .select('*, partners:guest_partners(id, first_name, sort_order)')
       .order('created_at', { ascending: false });
 
     if (error) {
       guestsError = error.message;
     } else {
-      guests = data as GuestRecord[];
+      guests = (data as GuestRecord[]).map((guest) => ({
+        ...guest,
+        partners: [...(guest.partners ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+      }));
     }
     guestsLoading = false;
   }
@@ -188,15 +205,31 @@
     rsvpsLoading = true;
     rsvpsError = '';
 
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*, guests(first_name, last_name, guest_type)')
-      .order('submitted_at', { ascending: false });
+    const [rsvpResult, attendanceResult] = await Promise.all([
+      supabase
+        .from('rsvps')
+        .select('*, guests(first_name)')
+        .order('submitted_at', { ascending: false }),
+      supabase.from('rsvp_partner_attendance').select('rsvp_id, partner:guest_partners(id, first_name)')
+    ]);
 
-    if (error) {
-      rsvpsError = error.message;
+    if (rsvpResult.error) {
+      rsvpsError = rsvpResult.error.message;
+    } else if (attendanceResult.error) {
+      rsvpsError = attendanceResult.error.message;
     } else {
-      rsvps = data as unknown as RsvpRecord[];
+      const attendanceRows = attendanceResult.data as {
+        rsvp_id: string;
+        partner: { id: string; first_name: string }[];
+      }[];
+      const partnersByRsvp = new Map<string, { id: string; first_name: string }[]>();
+      for (const row of attendanceRows) {
+        partnersByRsvp.set(row.rsvp_id, [...(partnersByRsvp.get(row.rsvp_id) ?? []), ...row.partner]);
+      }
+      rsvps = (rsvpResult.data as unknown as RsvpRecord[]).map((rsvp) => ({
+        ...rsvp,
+        attending_partners: partnersByRsvp.get(rsvp.id) ?? []
+      }));
     }
     rsvpsLoading = false;
   }
@@ -314,33 +347,172 @@
     return out;
   }
 
+  async function handleGuestCsvSelected(event: Event) {
+    const file = (event.currentTarget as HTMLInputElement).files?.[0];
+    guestCsvRows = [];
+    guestCsvFileName = file?.name ?? '';
+    guestCsvError = '';
+    guestCsvMessage = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      guestCsvError = 'Choose a .csv file.';
+      return;
+    }
+
+    try {
+      guestCsvRows = parseGuestCsv(await file.text());
+    } catch (error) {
+      guestCsvError = error instanceof Error ? error.message : 'Could not read the CSV file.';
+    }
+  }
+
+  async function importGuestCsv() {
+    if (!guestCsvRows.length || importingGuests) return;
+    if (summary.attendingCount >= RSVP_YES_LIMIT) {
+      guestCsvError = `Guest additions are blocked because ${RSVP_YES_LIMIT} or more people have RSVP'd yes.`;
+      return;
+    }
+
+    importingGuests = true;
+    guestCsvError = '';
+    guestCsvMessage = '';
+    let imported = 0;
+    const failures: string[] = [];
+
+    for (const row of guestCsvRows) {
+      const { data: guest, error: guestError } = await supabase
+        .from('guests')
+        .insert({
+          first_name: row.firstName,
+          whatsapp_number: row.whatsappNumber,
+          guest_code: generateGuestCode()
+        })
+        .select('id')
+        .single();
+
+      if (guestError) {
+        failures.push(`Row ${row.rowNumber} (${row.firstName}): ${guestError.message}`);
+        continue;
+      }
+
+      if (row.partnerNames.length) {
+        const { error: partnerError } = await supabase.from('guest_partners').insert(
+          row.partnerNames.map((first_name, index) => ({
+            guest_id: guest.id,
+            first_name,
+            sort_order: index + 1
+          }))
+        );
+        if (partnerError) {
+          const { error: cleanupError } = await supabase.from('guests').delete().eq('id', guest.id);
+          failures.push(
+            `Row ${row.rowNumber} (${row.firstName}): partner save failed: ${partnerError.message}${
+              cleanupError ? `; guest cleanup failed: ${cleanupError.message}` : ''
+            }`
+          );
+          continue;
+        }
+      }
+      imported += 1;
+    }
+
+    guestCsvMessage = `Imported ${imported} of ${guestCsvRows.length} guest${guestCsvRows.length === 1 ? '' : 's'}.`;
+    if (failures.length) guestCsvError = failures.join('\n');
+    await loadGuests();
+    guestCsvRows = [];
+    guestCsvFileName = '';
+    const fileInput = document.getElementById('guest-csv-file');
+    if (fileInput instanceof HTMLInputElement) fileInput.value = '';
+    importingGuests = false;
+  }
+
   async function handleAddGuest(e: Event) {
     e.preventDefault();
-    if (!newFirstName.trim() || !newLastName.trim()) return;
+    if (!newFirstName.trim()) return;
+
+    const partnerNames = newPartners.split(',').map((name) => name.trim()).filter(Boolean);
+    if (partnerNames.length > 3) {
+      addGuestError = 'A guest can have up to 3 invited partners.';
+      return;
+    }
+    if (summary.attendingCount >= RSVP_YES_LIMIT) {
+      addGuestError = `Guest additions are blocked because ${RSVP_YES_LIMIT} or more people have RSVP'd yes.`;
+      return;
+    }
 
     addingGuest = true;
     addGuestError = '';
 
-    const { error } = await supabase.from('guests').insert({
-      first_name: newFirstName.trim(),
-      last_name: newLastName.trim(),
-      whatsapp_number: newWhatsapp.trim() || null,
-      guest_type: newGuestType,
-      guest_allowance: Math.max(newGuestAllowance, 1),
-      guest_code: generateGuestCode()
-    });
+    const { data: guest, error } = await supabase
+      .from('guests')
+      .insert({
+        first_name: newFirstName.trim(),
+        whatsapp_number: newWhatsapp.trim() || null,
+        guest_code: generateGuestCode()
+      })
+      .select('id')
+      .single();
 
     if (error) {
       addGuestError = error.message;
     } else {
+      const { error: partnersError } = partnerNames.length
+        ? await supabase.from('guest_partners').insert(
+            partnerNames.map((first_name, index) => ({
+              guest_id: guest.id,
+              first_name,
+              sort_order: index + 1
+            }))
+          )
+        : { error: null };
+      if (partnersError) {
+        addGuestError = `Guest was added, but partner names could not be saved: ${partnersError.message}`;
+      }
       newFirstName = '';
-      newLastName = '';
+      newPartners = '';
       newWhatsapp = '';
-      newGuestType = 'standard';
-      newGuestAllowance = 1;
       await loadGuests();
     }
+
     addingGuest = false;
+  }
+
+  async function updatePartners(guest: GuestRecord, value: string) {
+    const names = value.split(',').map((name) => name.trim()).filter(Boolean);
+    if (names.length > 3) {
+      guestsError = 'A guest can have up to 3 invited partners.';
+      return;
+    }
+    if (summary.attendingCount >= RSVP_YES_LIMIT && names.length > guest.partners.length) {
+      guestsError = `Adding partners is blocked because ${RSVP_YES_LIMIT} or more people have RSVP'd yes.`;
+      return;
+    }
+
+    guestsError = '';
+    if (names.length) {
+      const { error } = await supabase.from('guest_partners').upsert(
+        names.map((first_name, index) => ({
+          guest_id: guest.id,
+          first_name,
+          sort_order: index + 1
+        })),
+        { onConflict: 'guest_id,sort_order' }
+      );
+      if (error) {
+        guestsError = error.message;
+        return;
+      }
+    }
+    const { error } = await supabase
+      .from('guest_partners')
+      .delete()
+      .eq('guest_id', guest.id)
+      .gt('sort_order', names.length);
+    if (error) {
+      guestsError = error.message;
+      return;
+    }
+    await loadGuests();
   }
 
   async function markInviteSent(guest: GuestRecord) {
@@ -351,16 +523,6 @@
     await loadGuests();
   }
 
-  function rsvpBadgeClass(status: string): string {
-    switch (status) {
-      case 'attending':
-        return 'bg-green-100 text-green-700';
-      case 'declining':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-slate-100 text-slate-600';
-    }
-  }
 </script>
 
 <svelte:head>
@@ -502,34 +664,39 @@
     <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
         <p class="text-2xl font-semibold text-slate-900">{summary.totalInvited}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Invited</p>
+        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">People Invited</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
         <p class="text-2xl font-semibold text-slate-900">{summary.responded}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Responded</p>
+        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">People Responded</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
         <p class="text-2xl font-semibold text-amber-600">{summary.pending}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Pending</p>
+        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">People Pending</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
         <p class="text-2xl font-semibold text-green-600">{summary.attendingCount}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Attending RSVPs</p>
+        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Attending People</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-        <p class="text-2xl font-semibold text-rose-600">{summary.totalAttendingGuests}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Total Attending</p>
+        <p class="text-2xl font-semibold text-rose-600">{summary.decliningCount}</p>
+        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Declined People</p>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
         <p class="text-2xl font-semibold text-slate-900">{summary.withDietary}</p>
-        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Needs</p>
+        <p class="mt-1 text-xs tracking-wide text-slate-500 uppercase">Dietary Responses</p>
       </div>
     </div>
+    {#if summary.attendingCount >= RSVP_YES_WARNING_THRESHOLD}
+      <p class="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+        RSVP warning: {summary.attendingCount} people have RSVP'd yes, including attending partners. The warning threshold is {RSVP_YES_WARNING_THRESHOLD}; guest additions are blocked at {RSVP_YES_LIMIT}.
+      </p>
+    {/if}
 
     <!-- Add guest -->
     <div class="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="text-lg font-medium text-slate-900">Add a Guest</h2>
-      <form onsubmit={handleAddGuest} class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <form onsubmit={handleAddGuest} class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <input
           type="text"
           placeholder="First name"
@@ -539,9 +706,8 @@
         />
         <input
           type="text"
-          placeholder="Last name"
-          bind:value={newLastName}
-          required
+          placeholder="Partner first names (comma-separated, max 3)"
+          bind:value={newPartners}
           class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
         />
         <input
@@ -550,34 +716,60 @@
           bind:value={newWhatsapp}
           class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
         />
-        <select
-          bind:value={newGuestType}
-          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none"
-        >
-          <option value="standard">Standard</option>
-          <option value="vip">VIP</option>
-          <option value="family">Family</option>
-          <option value="wedding_party">Wedding Party</option>
-          <option value="extra">Extra</option>
-        </select>
-        <label class="flex flex-col gap-1 text-sm text-slate-700">
-          People invited (including guest)
-          <input type="number" min="1" step="1" bind:value={newGuestAllowance} required class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900" />
-        </label>
 
-        <div class="sm:col-span-2 lg:col-span-5">
+        <div class="sm:col-span-2 lg:col-span-4">
           {#if addGuestError}
             <p class="mb-2 text-sm text-red-600">{addGuestError}</p>
           {/if}
           <button
             type="submit"
-            disabled={addingGuest}
+            disabled={addingGuest || summary.attendingCount >= RSVP_YES_LIMIT}
             class="rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {addingGuest ? 'Adding...' : 'Add Guest'}
           </button>
         </div>
       </form>
+    </div>
+
+    <div class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-medium text-slate-900">Bulk Import Guests</h2>
+      <p class="mt-1 text-sm text-slate-600">
+        Upload a CSV with one guest per row. Partner names are optional, up to three per guest.
+        Invite codes are generated automatically.
+      </p>
+      <a
+        href="/guest-list-import-template.csv"
+        download
+        class="mt-3 inline-block text-sm font-medium text-rose-600 hover:underline"
+      >Download CSV template</a>
+      <label class="mt-4 block text-sm font-medium text-slate-700" for="guest-csv-file">CSV file</label>
+      <input
+        id="guest-csv-file"
+        type="file"
+        accept=".csv,text/csv"
+        onchange={handleGuestCsvSelected}
+        class="mt-2 block w-full text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-rose-50 file:px-4 file:py-2 file:font-medium file:text-rose-700 hover:file:bg-rose-100"
+      />
+      {#if guestCsvFileName && guestCsvRows.length}
+        <p class="mt-3 text-sm text-slate-600">
+          {guestCsvFileName}: {guestCsvRows.length} guest{guestCsvRows.length === 1 ? '' : 's'} ready to import.
+        </p>
+        <button
+          type="button"
+          onclick={importGuestCsv}
+          disabled={importingGuests || summary.attendingCount >= RSVP_YES_LIMIT}
+          class="mt-4 rounded-full bg-rose-500 px-6 py-2.5 text-sm font-medium text-white shadow transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {importingGuests ? 'Importing...' : `Import ${guestCsvRows.length} guests`}
+        </button>
+      {/if}
+      {#if guestCsvMessage}
+        <p class="mt-3 text-sm text-green-700" role="status">{guestCsvMessage}</p>
+      {/if}
+      {#if guestCsvError}
+        <p class="mt-3 whitespace-pre-wrap text-sm text-red-600" role="alert">{guestCsvError}</p>
+      {/if}
     </div>
 
     <!-- Guest list -->
@@ -605,9 +797,9 @@
             <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
                 <th class="px-4 py-3">Name</th>
+                <th class="px-4 py-3">Invited partners (first names)</th>
+                <th class="px-4 py-3">People invited</th>
                 <th class="px-4 py-3">Code</th>
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3">RSVP</th>
                 <th class="px-4 py-3">Invite Sent</th>
                 <th class="px-4 py-3">WhatsApp</th>
               </tr>
@@ -616,15 +808,20 @@
               {#each guests as guest (guest.id)}
                 <tr>
                   <td class="px-4 py-3 font-medium text-slate-900">
-                    {guest.first_name} {guest.last_name}
+                    {guest.first_name}
                   </td>
-                  <td class="px-4 py-3 font-mono text-xs text-slate-600">{guest.guest_code}</td>
-                  <td class="px-4 py-3 text-slate-600 capitalize">{guest.guest_type.replace('_', ' ')}</td>
                   <td class="px-4 py-3">
-                    <span class="rounded-full px-2.5 py-1 text-xs font-medium {rsvpBadgeClass(guest.rsvp_status)}">
-                      {guest.rsvp_status}
-                    </span>
+                    <input
+                      type="text"
+                      aria-label={`Partner first names for ${guest.first_name}`}
+                      value={guest.partners.map((partner) => partner.first_name).join(', ')}
+                      placeholder="None"
+                      onblur={(event) => updatePartners(guest, event.currentTarget.value)}
+                      class="w-56 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-rose-400 focus:outline-none"
+                    />
                   </td>
+                  <td class="px-4 py-3 text-slate-600">{1 + guest.partners.length}</td>
+                  <td class="px-4 py-3 font-mono text-xs text-slate-600">{guest.guest_code}</td>
                   <td class="px-4 py-3 text-xs text-slate-500">
                     {guest.invite_sent_at ? new Date(guest.invite_sent_at).toLocaleDateString() : '—'}
                   </td>
@@ -676,9 +873,9 @@
             <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
                 <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Response</th>
-                <th class="px-4 py-3">Guests</th>
-                <th class="px-4 py-3">Plus One</th>
+                <th class="px-4 py-3">Guest response</th>
+                <th class="px-4 py-3">People attending</th>
+                <th class="px-4 py-3">Partners attending</th>
                 <th class="px-4 py-3">Dietary</th>
                 <th class="px-4 py-3">Song Request</th>
                 <th class="px-4 py-3">Notes</th>
@@ -689,19 +886,21 @@
               {#each rsvps as rsvp (rsvp.id)}
                 <tr>
                   <td class="px-4 py-3 font-medium whitespace-nowrap text-slate-900">
-                    {rsvp.guests ? `${rsvp.guests.first_name} ${rsvp.guests.last_name}` : 'Unknown guest'}
+                    {rsvp.guests ? rsvp.guests.first_name : 'Unknown guest'}
                   </td>
                   <td class="px-4 py-3">
                     <span
-                      class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.attending
+                      class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.guest_attending
                         ? 'bg-green-100 text-green-700'
                         : 'bg-red-100 text-red-700'}"
                     >
-                      {rsvp.attending ? 'Attending' : 'Declined'}
+                      {rsvp.guest_attending ? 'Attending' : 'Declined'}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-slate-600">{rsvp.attending ? rsvp.guest_count : '—'}</td>
-                  <td class="px-4 py-3 text-slate-600">{rsvp.plus_one_name || '—'}</td>
+                  <td class="px-4 py-3 text-slate-600">{rsvp.guest_count}</td>
+                  <td class="px-4 py-3 text-slate-600">
+                    {rsvp.attending_partners?.map((partner) => partner.first_name).join(', ') || '—'}
+                  </td>
                   <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.dietary_requirements || '—'}</td>
                   <td class="px-4 py-3 max-w-[12rem] text-slate-600">{rsvp.song_request || '—'}</td>
                   <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.notes || '—'}</td>

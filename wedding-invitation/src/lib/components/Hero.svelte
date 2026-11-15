@@ -9,12 +9,15 @@
 
   let guest = $derived($guestStore.guest);
 
-  // "Nevesh & Tracey" when a partner was added by the admin, otherwise just "Nevesh".
+  function formatInviteNames(names: string[]): string {
+    if (names.length < 2) return names[0] ?? '';
+    if (names.length === 2) return `${names[0]} & ${names[1]}`;
+    return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
+  }
+
   let invitationText = $derived(
     guest
-      ? guest.partner_first_name
-        ? `${guest.first_name} & ${guest.partner_first_name}`
-        : guest.first_name
+      ? formatInviteNames([guest.first_name, ...guest.partners.map((partner) => partner.first_name)])
       : null
   );
 </script>

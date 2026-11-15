@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Sprig from '$lib/components/Sprig.svelte';
-  import { rsvpDeadlines, site } from '$lib/site-config';
   import { findGuestByCode, submitRsvp, type GuestLookupResult } from '$lib/supabase';
 
   type Step = 'lookup' | 'form' | 'success';
@@ -12,20 +11,9 @@
   let lookupError = $state('');
 
   let guest = $state<GuestLookupResult | null>(null);
-  let guestType = $derived(guest?.guest_type ?? '');
-  let rsvpDeadline = $derived(
-    guestType === 'vip'
-      ? rsvpDeadlines.vip
-      : guestType === 'standard'
-        ? rsvpDeadlines.standard
-        : guestType === 'extra'
-          ? rsvpDeadlines.extra
-          : site.rsvpDeadlineLabel
-  );
-
-  let attending = $state(true);
-  let guestCount = $state(1);
-  let plusOneName = $state('');
+  let guestAttending = $state(true);
+  let attendingPartnerIds = $state<string[]>([]);
+  let totalAttending = $derived((guestAttending ? 1 : 0) + attendingPartnerIds.length);
   let dietaryRequirements = $state('');
   let songRequest = $state('');
   let notes = $state('');
@@ -58,14 +46,9 @@
       }
 
       guest = result;
-      dietaryRequirements = result.dietary_notes ?? '';
-      guestCount = 1;
-      plusOneName = '';
-      // A partner added by the admin is the plus-one by default.
-      if (result.partner_first_name && result.guest_allowance > 1) {
-        guestCount = Math.min(2, result.guest_allowance);
-        plusOneName = [result.partner_first_name, result.partner_last_name].filter(Boolean).join(' ');
-      }
+      guestAttending = true;
+      attendingPartnerIds = result.partners.map((partner) => partner.id);
+      dietaryRequirements = '';
       step = 'form';
     } catch (err) {
       lookupError = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
@@ -77,18 +60,17 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     if (!guest) return;
-
     submitLoading = true;
     submitError = '';
 
     try {
       await submitRsvp({
         guestCode: code,
-        attending,
-        guestCount: attending ? guestCount : 0,
-        plusOneName: attending ? plusOneName : '',
-        dietaryRequirements: attending ? dietaryRequirements : '',
-        songRequest: attending ? songRequest : '',
+        guestAttending,
+        partnerIds: attendingPartnerIds,
+        guestCount: totalAttending,
+        dietaryRequirements,
+        songRequest,
         notes
       });
       step = 'success';
@@ -103,9 +85,8 @@
     step = 'lookup';
     code = '';
     guest = null;
-    attending = true;
-    guestCount = 1;
-    plusOneName = '';
+    guestAttending = true;
+    attendingPartnerIds = [];
     dietaryRequirements = '';
     songRequest = '';
     notes = '';
@@ -114,7 +95,8 @@
   }
 </script>
 
-<section id="rsvp" class="mx-auto max-w-xl px-6 py-20">
+<section id="rsvp" class="bg-paper-2/50 px-6 py-20">
+  <div class="mx-auto max-w-xl">
   <div class="text-center">
     <p class="eyebrow">RSVP</p>
     <h2 class="heading mt-4">
@@ -157,65 +139,37 @@
         <p class="text-lg font-medium text-ink">
           Hi {guest.first_name}! We're so glad to hear from you.
         </p>
-        {#if rsvpDeadline}
-          <p class="border-y border-line py-4 text-sm leading-6 text-muted">
-            Please respond by <strong class="font-semibold text-ink">{rsvpDeadline}</strong>. A response before this date will help us ensure everyone is catered for accordingly.
-          </p>
-        {/if}
-
-        <fieldset class="space-y-2">
-          <legend class="text-sm font-medium text-ink">Will you be attending?</legend>
-          <div class="flex gap-3">
-            <button
-              type="button"
-              onclick={() => (attending = true)}
-              class="flex-1 rounded-none border px-4 py-3 text-sm font-medium transition {attending
-                ? 'border-sage bg-sage text-surface'
-                : 'border-line text-ink hover:border-sage'}"
-            >
-              Joyfully Attending
-            </button>
-            <button
-              type="button"
-              onclick={() => (attending = false)}
-              class="flex-1 rounded-none border px-4 py-3 text-sm font-medium transition {!attending
-                ? 'border-sage bg-sage text-surface'
-                : 'border-line text-ink hover:border-sage'}"
-            >
-              Regretfully Declining
-            </button>
-          </div>
-        </fieldset>
-
-        {#if attending}
-          <div>
-            <label class="block text-sm font-medium text-ink" for="guest-count">
-              Number attending (up to {guest.guest_allowance} {guest.guest_allowance === 1 ? 'person' : 'people'})
-            </label>
+        <fieldset class="space-y-3">
+          <legend class="text-sm font-medium text-ink">Select everyone who will be attending</legend>
+          <label class="flex items-center gap-3 text-sm text-ink">
             <input
-              id="guest-count"
-              type="number"
-              min="1"
-              max={guest.guest_allowance}
-              bind:value={guestCount}
-              class="mt-2 w-full rounded-none border border-line px-4 py-3 text-base text-ink focus:border-sage focus:outline-none"
+              type="checkbox"
+              bind:checked={guestAttending}
+              class="h-4 w-4 accent-sage"
             />
-          </div>
-
-          {#if guest.guest_allowance > 1 && guestCount > 1}
-            <div>
-              <label class="block text-sm font-medium text-ink" for="plus-one-name">
-                Plus one's / Partner's name
-              </label>
+            {guest.first_name}
+          </label>
+          {#each guest.partners as partner (partner.id)}
+            <label class="flex items-center gap-3 text-sm text-ink">
               <input
-                id="plus-one-name"
-                type="text"
-                bind:value={plusOneName}
-                class="mt-2 w-full rounded-none border border-line px-4 py-3 text-base text-ink focus:border-sage focus:outline-none"
+                type="checkbox"
+                checked={attendingPartnerIds.includes(partner.id)}
+                onchange={(event) => {
+                  attendingPartnerIds = event.currentTarget.checked
+                    ? [...attendingPartnerIds, partner.id]
+                    : attendingPartnerIds.filter((id) => id !== partner.id);
+                }}
+                class="h-4 w-4 accent-sage"
               />
-            </div>
-          {/if}
+              {partner.first_name}
+            </label>
+          {/each}
+        </fieldset>
+        <p class="text-sm text-muted" aria-live="polite">
+          Confirmed attending: <strong class="text-ink">{totalAttending}</strong>
+        </p>
 
+        {#if totalAttending > 0}
           <div>
             <label class="block text-sm font-medium text-ink" for="dietary">
               Dietary requirements
@@ -281,7 +235,7 @@
         <Sprig class="mx-auto h-5 w-32 text-champagne" />
         <h3 class="mt-4 text-xl font-medium text-ink">Thank you!</h3>
         <p class="mt-2 text-ink">
-          {attending
+          {totalAttending > 0
             ? "Your RSVP is confirmed. We can't wait to celebrate with you!"
             : "We're sorry you can't make it, but thank you for letting us know."}
         </p>
@@ -295,4 +249,5 @@
       </div>
     {/if}
   </div>
+</div>
 </section>

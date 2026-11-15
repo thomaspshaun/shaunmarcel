@@ -5,7 +5,7 @@
   const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(venue.mapEmbedQuery)}&output=embed`;
 </script>
 
-<section id="venue" class="border-t border-line/70 bg-paper-2/40 px-6 py-24 sm:py-32">
+<section id="venue" class="border-t border-line/70 bg-paper-2/50 px-6 py-24 sm:py-32">
   <div class="mx-auto max-w-5xl">
     <div class="text-center" use:reveal>
       <p class="eyebrow">The Venue</p>

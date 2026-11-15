@@ -15,41 +15,30 @@ export const supabase = createClient(
 export interface GuestRecord {
   id: string;
   first_name: string;
-  last_name: string;
-  email: string | null;
-  phone: string | null;
   whatsapp_number: string | null;
   guest_code: string;
-  guest_type: string;
-  guest_allowance: number;
-  partner_first_name?: string | null;
-  partner_last_name?: string | null;
-  accommodation_type?: "estate" | "guesthouse" | "own" | null;
-  accommodation_name?: string | null;
-  room_nights?: number | null;
-  accommodation_confirmed?: boolean;
-  friday_supper_status?: string;
-  sunday_breakfast_status?: string;
-  rsvp_status: string;
-  dietary_notes: string | null;
   invite_sent_at: string | null;
+  partners: GuestPartner[];
+}
+
+export interface GuestPartner {
+  id: string;
+  first_name: string;
+  sort_order: number;
 }
 
 export interface RsvpRecord {
   id: string;
   guest_id: string;
   attending: boolean;
+  guest_attending: boolean;
   guest_count: number;
-  plus_one_name: string | null;
   dietary_requirements: string | null;
   song_request: string | null;
   notes: string | null;
   submitted_at: string;
-  guests: {
-    first_name: string;
-    last_name: string;
-    guest_type: string;
-  } | null;
+  attending_partners?: { id: string; first_name: string }[];
+  guests: { first_name: string } | null;
 }
 
 export interface GalleryPhoto {
@@ -81,16 +70,7 @@ export interface GuestbookComment {
 export interface GuestLookupResult {
   id: string;
   first_name: string;
-  last_name: string;
-  guest_type: string;
-  guest_allowance: number;
-  partner_first_name: string | null;
-  partner_last_name: string | null;
-  rsvp_status: string;
-  dietary_notes: string | null;
-  accommodation_name: string | null;
-  room_nights: number | null;
-  accommodation_confirmed: boolean;
+  partners: GuestPartner[];
 }
 
 export async function findGuestByCode(
@@ -112,9 +92,9 @@ export async function findGuestByCode(
 
 export interface RsvpSubmission {
   guestCode: string;
-  attending: boolean;
+  guestAttending: boolean;
+  partnerIds: string[];
   guestCount: number;
-  plusOneName: string;
   dietaryRequirements: string;
   songRequest: string;
   notes: string;
@@ -123,11 +103,11 @@ export interface RsvpSubmission {
 export async function submitRsvp(submission: RsvpSubmission): Promise<void> {
   const { data, error } = await supabase.rpc("submit_rsvp", {
     p_guest_code: submission.guestCode,
-    p_attending: submission.attending,
+    p_guest_attending: submission.guestAttending,
+    p_attending_partner_ids: submission.partnerIds,
     p_guest_count: submission.guestCount,
-    p_plus_one_name: submission.plusOneName || null,
-    p_dietary_requirements: submission.dietaryRequirements || null,
-    p_song_request: submission.songRequest || null,
+    p_dietary_requirements: submission.guestCount ? submission.dietaryRequirements || null : null,
+    p_song_request: submission.guestCount ? submission.songRequest || null : null,
     p_notes: submission.notes || null,
   });
 

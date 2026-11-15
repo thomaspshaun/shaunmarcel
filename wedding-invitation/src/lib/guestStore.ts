@@ -27,7 +27,7 @@ function createGuestStore() {
       try {
         const session: GuestSession = JSON.parse(stored);
         const age = Date.now() - session.loadedAt;
-        if (age < SESSION_EXPIRY_MS) {
+        if (age < SESSION_EXPIRY_MS && Array.isArray(session.guest?.partners)) {
           initialGuest = session.guest;
           initialCode = session.code;
         } else {
