@@ -5,7 +5,7 @@
 
   const notes = [
     `The wedding ceremony and reception will both take place at ${site.venueName}.`,
-    'Your invitation link is unique to you. Please do not share it with anyone, as anyone with the link can RSVP on your behalf.',
+    'Your invitation link is unique to you. Please keep it confidential and do not share it with anyone.',
     'Further details, including RSVP and directions, are available on this website.'
   ];
 </script>
