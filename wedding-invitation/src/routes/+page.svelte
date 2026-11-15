@@ -36,7 +36,7 @@
 
 <svelte:head>
   {#if hasVerifiedInvitation}
-    <title>{site.coupleNames} — Wedding Invitation</title>
+    <title>{site.shareTitle}</title>
     <meta name="description" content="{site.coupleNames}'s wedding day invitation for 1 April 2027, with the ceremony details and RSVP." />
   {/if}
 </svelte:head>

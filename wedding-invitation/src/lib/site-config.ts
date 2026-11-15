@@ -3,6 +3,7 @@
 
 export const site = {
   coupleNames: "Shaun & Marcel",
+  shareTitle: "Shaun & Marcel - 1 April 2027",
   names: ["Shaun", "Marcel"] as const,
   tagline: "Together with their families",
   weddingDateLabel: "1 April 2027",

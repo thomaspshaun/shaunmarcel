@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-  <title>Save the Date — {site.coupleNames}</title>
+  <title>{site.shareTitle}</title>
   <meta name="description" content="Save the date: 1 April 2027 in Cape Town. Shaun & Marcel." />
   <meta name="theme-color" content="#fffbe8" />
 </svelte:head>

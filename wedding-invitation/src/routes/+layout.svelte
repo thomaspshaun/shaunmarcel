@@ -13,7 +13,7 @@
   );
   let isSplashPage = $derived(page.url.pathname === '/' && !hasVerifiedInvitation);
 
-  const title = `${site.coupleNames} — Wedding Invitation`;
+  const title = site.shareTitle;
   const description = `${site.coupleNames} invite you to their wedding on 1 April 2027 at ${site.venueName}, ${site.region}. View the ceremony details and RSVP.`;
   const image = `${site.siteUrl}${site.socialImagePath}`;
 </script>
