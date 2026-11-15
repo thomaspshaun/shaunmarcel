@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS rsvps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   guest_id UUID NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
   attending BOOLEAN NOT NULL,
+  guest_attending BOOLEAN NOT NULL DEFAULT true,
   guest_count INTEGER NOT NULL DEFAULT 0 CHECK (guest_count >= 0),
   dietary_requirements TEXT,
   song_request TEXT,
@@ -34,6 +35,8 @@ CREATE TABLE IF NOT EXISTS rsvp_partner_attendance (
   partner_id UUID NOT NULL REFERENCES guest_partners(id) ON DELETE CASCADE,
   PRIMARY KEY (rsvp_id, partner_id)
 );
+
+ALTER TABLE rsvps ADD COLUMN IF NOT EXISTS guest_attending BOOLEAN NOT NULL DEFAULT true;
 
 CREATE INDEX IF NOT EXISTS idx_guest_partners_guest_id ON guest_partners(guest_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_rsvp_partner_attendance_partner_id ON rsvp_partner_attendance(partner_id);
@@ -285,7 +288,7 @@ GRANT EXECUTE ON FUNCTION find_guest_by_code(TEXT) TO anon, authenticated;
 DROP FUNCTION IF EXISTS submit_rsvp(TEXT, BOOLEAN, INTEGER, TEXT, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION submit_rsvp(
   p_guest_code TEXT,
-  p_attending BOOLEAN,
+  p_guest_attending BOOLEAN,
   p_attending_partner_ids UUID[],
   p_guest_count INTEGER,
   p_dietary_requirements TEXT,
@@ -300,8 +303,11 @@ AS $$
 DECLARE
   v_guest_id UUID;
   v_rsvp_id UUID;
+  v_guest_count INTEGER;
   v_partner_ids UUID[] := COALESCE(p_attending_partner_ids, ARRAY[]::UUID[]);
 BEGIN
+  v_guest_count := CASE WHEN p_guest_attending THEN 1 ELSE 0 END + cardinality(v_partner_ids);
+
   SELECT id INTO v_guest_id
   FROM guests
   WHERE guest_code = upper(trim(p_guest_code));
@@ -312,16 +318,13 @@ BEGIN
   END IF;
 
   IF cardinality(v_partner_ids) > 3
-     OR (NOT p_attending AND cardinality(v_partner_ids) > 0)
      OR cardinality(v_partner_ids) <> (
        SELECT count(DISTINCT selected.id) FROM unnest(v_partner_ids) selected(id)
      )
-     OR (p_attending AND (
-       p_guest_count IS NULL
-       OR p_guest_count < 1
-       OR p_guest_count > 4
-       OR p_guest_count <> 1 + cardinality(v_partner_ids)
-     ))
+     OR p_guest_count IS NULL
+     OR p_guest_count < 0
+     OR p_guest_count > 4
+     OR p_guest_count <> v_guest_count
      OR EXISTS (
        SELECT 1 FROM unnest(v_partner_ids) selected(id)
        WHERE NOT EXISTS (
@@ -334,16 +337,16 @@ BEGIN
   END IF;
 
   INSERT INTO rsvps (
-    guest_id, attending, guest_count,
+    guest_id, attending, guest_attending, guest_count,
     dietary_requirements, song_request, notes, submitted_at
   )
   VALUES (
-    v_guest_id, p_attending,
-    CASE WHEN p_attending THEN p_guest_count ELSE 0 END,
+    v_guest_id, v_guest_count > 0, p_guest_attending, v_guest_count,
     p_dietary_requirements, p_song_request, p_notes, NOW()
   )
   ON CONFLICT (guest_id) DO UPDATE SET
     attending = EXCLUDED.attending,
+    guest_attending = EXCLUDED.guest_attending,
     guest_count = EXCLUDED.guest_count,
     dietary_requirements = EXCLUDED.dietary_requirements,
     song_request = EXCLUDED.song_request,
@@ -352,7 +355,7 @@ BEGIN
   RETURNING id INTO v_rsvp_id;
 
   DELETE FROM rsvp_partner_attendance WHERE rsvp_id = v_rsvp_id;
-  IF p_attending AND cardinality(v_partner_ids) > 0 THEN
+  IF cardinality(v_partner_ids) > 0 THEN
     INSERT INTO rsvp_partner_attendance (rsvp_id, partner_id)
     SELECT v_rsvp_id, unnest(v_partner_ids);
   END IF;

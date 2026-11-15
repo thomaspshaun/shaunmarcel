@@ -31,6 +31,7 @@ export interface RsvpRecord {
   id: string;
   guest_id: string;
   attending: boolean;
+  guest_attending: boolean;
   guest_count: number;
   dietary_requirements: string | null;
   song_request: string | null;
@@ -91,7 +92,7 @@ export async function findGuestByCode(
 
 export interface RsvpSubmission {
   guestCode: string;
-  attending: boolean;
+  guestAttending: boolean;
   partnerIds: string[];
   guestCount: number;
   dietaryRequirements: string;
@@ -102,11 +103,11 @@ export interface RsvpSubmission {
 export async function submitRsvp(submission: RsvpSubmission): Promise<void> {
   const { data, error } = await supabase.rpc("submit_rsvp", {
     p_guest_code: submission.guestCode,
-    p_attending: submission.attending,
-    p_attending_partner_ids: submission.attending ? submission.partnerIds : [],
-    p_guest_count: submission.attending ? submission.guestCount : 0,
-    p_dietary_requirements: submission.dietaryRequirements || null,
-    p_song_request: submission.songRequest || null,
+    p_guest_attending: submission.guestAttending,
+    p_attending_partner_ids: submission.partnerIds,
+    p_guest_count: submission.guestCount,
+    p_dietary_requirements: submission.guestCount ? submission.dietaryRequirements || null : null,
+    p_song_request: submission.guestCount ? submission.songRequest || null : null,
     p_notes: submission.notes || null,
   });
 

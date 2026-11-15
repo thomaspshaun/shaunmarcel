@@ -59,13 +59,18 @@
   let summary = $derived.by(() => {
     const totalInvited = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
     const attending = rsvps.filter((r) => r.attending);
-    const declining = rsvps.filter((r) => !r.attending);
     const responded = rsvps.reduce((sum, rsvp) => {
       const invite = guests.find((guest) => guest.id === rsvp.guest_id);
       return sum + (invite ? 1 + invite.partners.length : 0);
     }, 0);
     const pending = totalInvited - responded;
     const totalAttendingGuests = attending.reduce((sum, r) => sum + (r.guest_count ?? 1), 0);
+    const totalDecliningGuests = rsvps.reduce((sum, rsvp) => {
+      const invite = guests.find((guest) => guest.id === rsvp.guest_id);
+      if (!invite) return sum;
+      const attendingPartners = rsvp.attending_partners?.length ?? 0;
+      return sum + Number(!rsvp.guest_attending) + invite.partners.length - attendingPartners;
+    }, 0);
     const withDietary = rsvps.filter((r) => r.dietary_requirements?.trim()).length;
 
     return {
@@ -73,10 +78,7 @@
       responded,
       pending: Math.max(pending, 0),
       attendingCount: totalAttendingGuests,
-      decliningCount: declining.reduce((sum, rsvp) => {
-        const invite = guests.find((guest) => guest.id === rsvp.guest_id);
-        return sum + (invite ? 1 + invite.partners.length : 0);
-      }, 0),
+      decliningCount: totalDecliningGuests,
       totalAttendingGuests,
       withDietary
     };
@@ -871,7 +873,7 @@
             <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
                 <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Response</th>
+                <th class="px-4 py-3">Guest response</th>
                 <th class="px-4 py-3">People attending</th>
                 <th class="px-4 py-3">Partners attending</th>
                 <th class="px-4 py-3">Dietary</th>
@@ -888,14 +890,14 @@
                   </td>
                   <td class="px-4 py-3">
                     <span
-                      class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.attending
+                      class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.guest_attending
                         ? 'bg-green-100 text-green-700'
                         : 'bg-red-100 text-red-700'}"
                     >
-                      {rsvp.attending ? 'Attending' : 'Declined'}
+                      {rsvp.guest_attending ? 'Attending' : 'Declined'}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-slate-600">{rsvp.attending ? rsvp.guest_count : '—'}</td>
+                  <td class="px-4 py-3 text-slate-600">{rsvp.guest_count}</td>
                   <td class="px-4 py-3 text-slate-600">
                     {rsvp.attending_partners?.map((partner) => partner.first_name).join(', ') || '—'}
                   </td>

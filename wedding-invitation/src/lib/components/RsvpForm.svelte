@@ -11,9 +11,9 @@
   let lookupError = $state('');
 
   let guest = $state<GuestLookupResult | null>(null);
-  let attending = $state(true);
+  let guestAttending = $state(true);
   let attendingPartnerIds = $state<string[]>([]);
-  let totalAttending = $derived(attending ? 1 + attendingPartnerIds.length : 0);
+  let totalAttending = $derived((guestAttending ? 1 : 0) + attendingPartnerIds.length);
   let dietaryRequirements = $state('');
   let songRequest = $state('');
   let notes = $state('');
@@ -46,6 +46,7 @@
       }
 
       guest = result;
+      guestAttending = true;
       attendingPartnerIds = result.partners.map((partner) => partner.id);
       dietaryRequirements = '';
       step = 'form';
@@ -65,11 +66,11 @@
     try {
       await submitRsvp({
         guestCode: code,
-        attending,
-        partnerIds: attending ? attendingPartnerIds : [],
+        guestAttending,
+        partnerIds: attendingPartnerIds,
         guestCount: totalAttending,
-        dietaryRequirements: attending ? dietaryRequirements : '',
-        songRequest: attending ? songRequest : '',
+        dietaryRequirements,
+        songRequest,
         notes
       });
       step = 'success';
@@ -84,7 +85,7 @@
     step = 'lookup';
     code = '';
     guest = null;
-    attending = true;
+    guestAttending = true;
     attendingPartnerIds = [];
     dietaryRequirements = '';
     songRequest = '';
@@ -138,55 +139,37 @@
         <p class="text-lg font-medium text-ink">
           Hi {guest.first_name}! We're so glad to hear from you.
         </p>
-        <fieldset class="space-y-2">
-          <legend class="text-sm font-medium text-ink">Will you be attending?</legend>
-          <div class="flex gap-3">
-            <button
-              type="button"
-              onclick={() => (attending = true)}
-              class="flex-1 rounded-none border px-4 py-3 text-sm font-medium transition {attending
-                ? 'border-sage bg-sage text-surface'
-                : 'border-line text-ink hover:border-sage'}"
-            >
-              Joyfully Attending
-            </button>
-            <button
-              type="button"
-              onclick={() => (attending = false)}
-              class="flex-1 rounded-none border px-4 py-3 text-sm font-medium transition {!attending
-                ? 'border-sage bg-sage text-surface'
-                : 'border-line text-ink hover:border-sage'}"
-            >
-              Regretfully Declining
-            </button>
-          </div>
+        <fieldset class="space-y-3">
+          <legend class="text-sm font-medium text-ink">Select everyone who will be attending</legend>
+          <label class="flex items-center gap-3 text-sm text-ink">
+            <input
+              type="checkbox"
+              bind:checked={guestAttending}
+              class="h-4 w-4 accent-sage"
+            />
+            {guest.first_name}
+          </label>
+          {#each guest.partners as partner (partner.id)}
+            <label class="flex items-center gap-3 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={attendingPartnerIds.includes(partner.id)}
+                onchange={(event) => {
+                  attendingPartnerIds = event.currentTarget.checked
+                    ? [...attendingPartnerIds, partner.id]
+                    : attendingPartnerIds.filter((id) => id !== partner.id);
+                }}
+                class="h-4 w-4 accent-sage"
+              />
+              {partner.first_name}
+            </label>
+          {/each}
         </fieldset>
+        <p class="text-sm text-muted" aria-live="polite">
+          Confirmed attending: <strong class="text-ink">{totalAttending}</strong>
+        </p>
 
-        {#if attending}
-          {#if guest.partners.length > 0}
-            <fieldset class="space-y-3">
-              <legend class="text-sm font-medium text-ink">Will your invited partner(s) be attending?</legend>
-              {#each guest.partners as partner (partner.id)}
-                <label class="flex items-center gap-3 text-sm text-ink">
-                  <input
-                    type="checkbox"
-                    checked={attendingPartnerIds.includes(partner.id)}
-                    onchange={(event) => {
-                      attendingPartnerIds = event.currentTarget.checked
-                        ? [...attendingPartnerIds, partner.id]
-                        : attendingPartnerIds.filter((id) => id !== partner.id);
-                    }}
-                    class="h-4 w-4 accent-sage"
-                  />
-                  {partner.first_name}
-                </label>
-              {/each}
-            </fieldset>
-          {/if}
-          <p class="text-sm text-muted" aria-live="polite">
-            Confirmed attending, including you: <strong class="text-ink">{totalAttending}</strong>
-          </p>
-
+        {#if totalAttending > 0}
           <div>
             <label class="block text-sm font-medium text-ink" for="dietary">
               Dietary requirements
@@ -252,7 +235,7 @@
         <Sprig class="mx-auto h-5 w-32 text-champagne" />
         <h3 class="mt-4 text-xl font-medium text-ink">Thank you!</h3>
         <p class="mt-2 text-ink">
-          {attending
+          {totalAttending > 0
             ? "Your RSVP is confirmed. We can't wait to celebrate with you!"
             : "We're sorry you can't make it, but thank you for letting us know."}
         </p>
