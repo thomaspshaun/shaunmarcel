@@ -8,19 +8,18 @@
   let loadError = $state('');
 
   let summary = $derived.by(() => {
-    const totalInvited = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
-    const attending = rsvps.filter((r) => r.attending);
+    const totalPeople = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
+    const totalInvited = guests.reduce(
+      (sum, guest) => sum + (guest.invite_sent_at ? 1 + guest.partners.length : 0),
+      0
+    );
     const responded = rsvps.reduce((sum, rsvp) => {
       const guest = guests.find((item) => item.id === rsvp.guest_id);
       return sum + (guest ? 1 + guest.partners.length : 0);
     }, 0);
-    const pending = totalInvited - responded;
-    const totalAttendingGuests = attending.reduce((sum, r) => sum + (r.guest_count ?? 1), 0);
-    const totalDecliningGuests = rsvps.reduce((sum, rsvp) => {
-      const guest = guests.find((item) => item.id === rsvp.guest_id);
-      if (!guest) return sum;
-      return sum + Number(!rsvp.guest_attending) + guest.partners.length - (rsvp.attending_partners?.length ?? 0);
-    }, 0);
+    const totalAttendingGuests = rsvps.reduce((sum, rsvp) => sum + rsvp.guest_count, 0);
+    const pending = totalPeople - totalInvited;
+    const totalDecliningGuests = Math.max(responded - totalAttendingGuests, 0);
     const withDietary = rsvps.filter((r) => r.dietary_requirements?.trim()).length;
 
     return {
@@ -56,21 +55,23 @@
 
     if (rsvpsRes.error) {
       loadError = rsvpsRes.error.message;
-    } else if (attendanceRes.error) {
-      loadError = attendanceRes.error.message;
     } else {
-      const attendanceRows = attendanceRes.data as {
+      const attendanceRows = (attendanceRes.data ?? []) as {
         rsvp_id: string;
-        partner: { id: string; first_name: string }[];
+        partner: { id: string; first_name: string } | { id: string; first_name: string }[] | null;
       }[];
       const partnersByRsvp = new Map<string, { id: string; first_name: string }[]>();
       for (const row of attendanceRows) {
-        partnersByRsvp.set(row.rsvp_id, [...(partnersByRsvp.get(row.rsvp_id) ?? []), ...row.partner]);
+        const partners = Array.isArray(row.partner) ? row.partner : row.partner ? [row.partner] : [];
+        partnersByRsvp.set(row.rsvp_id, [...(partnersByRsvp.get(row.rsvp_id) ?? []), ...partners]);
       }
       rsvps = (rsvpsRes.data as unknown as RsvpRecord[]).map((rsvp) => ({
         ...rsvp,
         attending_partners: partnersByRsvp.get(rsvp.id) ?? []
       }));
+      if (attendanceRes.error) {
+        loadError = `RSVPs loaded, but partner attendance details could not be loaded: ${attendanceRes.error.message}`;
+      }
     }
 
     loading = false;

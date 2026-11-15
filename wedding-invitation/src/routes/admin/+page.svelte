@@ -10,6 +10,7 @@
   const RSVP_YES_WARNING_THRESHOLD = 95;
   const RSVP_YES_LIMIT = 100;
 
+  let activeView = $state<'guests' | 'rsvps'>('guests');
   let session: Session | null = $state(null);
   let authLoading = $state(true);
 
@@ -57,20 +58,18 @@
   let importingGuests = $state(false);
 
   let summary = $derived.by(() => {
-    const totalInvited = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
-    const attending = rsvps.filter((r) => r.attending);
+    const totalPeople = guests.reduce((sum, guest) => sum + 1 + guest.partners.length, 0);
+    const totalInvited = guests.reduce(
+      (sum, guest) => sum + (guest.invite_sent_at ? 1 + guest.partners.length : 0),
+      0
+    );
     const responded = rsvps.reduce((sum, rsvp) => {
       const invite = guests.find((guest) => guest.id === rsvp.guest_id);
       return sum + (invite ? 1 + invite.partners.length : 0);
     }, 0);
-    const pending = totalInvited - responded;
-    const totalAttendingGuests = attending.reduce((sum, r) => sum + (r.guest_count ?? 1), 0);
-    const totalDecliningGuests = rsvps.reduce((sum, rsvp) => {
-      const invite = guests.find((guest) => guest.id === rsvp.guest_id);
-      if (!invite) return sum;
-      const attendingPartners = rsvp.attending_partners?.length ?? 0;
-      return sum + Number(!rsvp.guest_attending) + invite.partners.length - attendingPartners;
-    }, 0);
+    const totalAttendingGuests = rsvps.reduce((sum, rsvp) => sum + rsvp.guest_count, 0);
+    const pending = totalPeople - totalInvited;
+    const totalDecliningGuests = Math.max(responded - totalAttendingGuests, 0);
     const withDietary = rsvps.filter((r) => r.dietary_requirements?.trim()).length;
 
     return {
@@ -215,23 +214,34 @@
 
     if (rsvpResult.error) {
       rsvpsError = rsvpResult.error.message;
-    } else if (attendanceResult.error) {
-      rsvpsError = attendanceResult.error.message;
     } else {
-      const attendanceRows = attendanceResult.data as {
+      const attendanceRows = (attendanceResult.data ?? []) as {
         rsvp_id: string;
-        partner: { id: string; first_name: string }[];
+        partner: { id: string; first_name: string } | { id: string; first_name: string }[] | null;
       }[];
       const partnersByRsvp = new Map<string, { id: string; first_name: string }[]>();
       for (const row of attendanceRows) {
-        partnersByRsvp.set(row.rsvp_id, [...(partnersByRsvp.get(row.rsvp_id) ?? []), ...row.partner]);
+        const partners = Array.isArray(row.partner) ? row.partner : row.partner ? [row.partner] : [];
+        partnersByRsvp.set(row.rsvp_id, [...(partnersByRsvp.get(row.rsvp_id) ?? []), ...partners]);
       }
       rsvps = (rsvpResult.data as unknown as RsvpRecord[]).map((rsvp) => ({
         ...rsvp,
         attending_partners: partnersByRsvp.get(rsvp.id) ?? []
       }));
+      if (attendanceResult.error) {
+        rsvpsError = `RSVPs loaded, but partner attendance details could not be loaded: ${attendanceResult.error.message}`;
+      }
     }
     rsvpsLoading = false;
+  }
+
+  function getPartnerResponses(rsvp: RsvpRecord): string {
+    const guest = guests.find((item) => item.id === rsvp.guest_id);
+    if (!guest?.partners.length) return '—';
+    const attendingPartnerIds = new Set(rsvp.attending_partners?.map((partner) => partner.id) ?? []);
+    return guest.partners
+      .map((partner) => `${partner.first_name} (${attendingPartnerIds.has(partner.id) ? 'attending' : 'declined'})`)
+      .join(', ');
   }
 
   function withPublicUrl<T extends { storage_path: string }>(
@@ -516,10 +526,14 @@
   }
 
   async function markInviteSent(guest: GuestRecord) {
-    await supabase
+    const { error } = await supabase
       .from('guests')
       .update({ invite_sent_at: new Date().toISOString() })
       .eq('id', guest.id);
+    if (error) {
+      guestsError = `Could not record that the invitation was sent: ${error.message}`;
+      return;
+    }
     await loadGuests();
   }
 
@@ -650,7 +664,9 @@
     </div>
   {:else}
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <h1 class="text-2xl font-medium text-slate-900">Guest Management</h1>
+      <h1 class="text-2xl font-medium text-slate-900">
+        {activeView === 'guests' ? 'Guest Management' : 'RSVP Responses'}
+      </h1>
       <button
         type="button"
         onclick={handleSignOut}
@@ -660,6 +676,30 @@
       </button>
     </div>
 
+    <nav class="mt-6 flex gap-2 border-b border-slate-200" aria-label="Admin views">
+      <button
+        type="button"
+        aria-current={activeView === 'guests' ? 'page' : undefined}
+        onclick={() => (activeView = 'guests')}
+        class="border-b-2 px-4 py-2 text-sm font-medium {activeView === 'guests'
+          ? 'border-rose-500 text-rose-700'
+          : 'border-transparent text-slate-500 hover:text-slate-700'}"
+      >
+        Guests
+      </button>
+      <button
+        type="button"
+        aria-current={activeView === 'rsvps' ? 'page' : undefined}
+        onclick={() => (activeView = 'rsvps')}
+        class="border-b-2 px-4 py-2 text-sm font-medium {activeView === 'rsvps'
+          ? 'border-rose-500 text-rose-700'
+          : 'border-transparent text-slate-500 hover:text-slate-700'}"
+      >
+        RSVP Responses ({rsvps.length})
+      </button>
+    </nav>
+
+    {#if activeView === 'guests'}
     <!-- RSVP summary -->
     <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
       <div class="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
@@ -792,49 +832,58 @@
       {:else if guests.length === 0}
         <p class="mt-4 text-slate-500">No guests yet — add your first one above.</p>
       {:else}
-        <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table class="w-full table-fixed divide-y divide-slate-200 text-xs sm:table-auto sm:text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
-                <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Invited partners (first names)</th>
-                <th class="px-4 py-3">People invited</th>
-                <th class="px-4 py-3">Code</th>
-                <th class="px-4 py-3">Invite Sent</th>
-                <th class="px-4 py-3">WhatsApp</th>
+                <th class="w-[20%] px-2 py-2 sm:w-auto sm:px-4 sm:py-3">Name</th>
+                <th class="w-[30%] px-2 py-2 sm:w-auto sm:px-4 sm:py-3">Partner</th>
+                <th class="hidden px-4 py-3 sm:table-cell">People invited</th>
+                <th class="hidden px-4 py-3 sm:table-cell">Code</th>
+                <th class="w-[22%] px-2 py-2 sm:w-auto sm:px-4 sm:py-3">
+                  <span class="sm:hidden">Sent</span>
+                  <span class="hidden sm:inline">Invite Sent</span>
+                </th>
+                <th class="w-[28%] px-1 py-2 sm:w-auto sm:px-4 sm:py-3">WhatsApp</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               {#each guests as guest (guest.id)}
                 <tr>
-                  <td class="px-4 py-3 font-medium text-slate-900">
+                  <td class="break-words px-2 py-2 font-medium text-slate-900 sm:px-4 sm:py-3">
                     {guest.first_name}
                   </td>
-                  <td class="px-4 py-3">
+                  <td class="px-2 py-2 sm:px-4 sm:py-3">
                     <input
                       type="text"
                       aria-label={`Partner first names for ${guest.first_name}`}
                       value={guest.partners.map((partner) => partner.first_name).join(', ')}
                       placeholder="None"
                       onblur={(event) => updatePartners(guest, event.currentTarget.value)}
-                      class="w-56 rounded-lg border border-slate-300 px-2 py-1 text-xs focus:border-rose-400 focus:outline-none"
+                      class="w-full min-w-0 rounded-lg border border-slate-300 px-1.5 py-1 text-[10px] focus:border-rose-400 focus:outline-none sm:w-56 sm:px-2 sm:text-xs"
                     />
                   </td>
-                  <td class="px-4 py-3 text-slate-600">{1 + guest.partners.length}</td>
-                  <td class="px-4 py-3 font-mono text-xs text-slate-600">{guest.guest_code}</td>
-                  <td class="px-4 py-3 text-xs text-slate-500">
-                    {guest.invite_sent_at ? new Date(guest.invite_sent_at).toLocaleDateString() : '—'}
+                  <td class="hidden px-4 py-3 text-slate-600 sm:table-cell">{1 + guest.partners.length}</td>
+                  <td class="hidden px-4 py-3 font-mono text-xs text-slate-600 sm:table-cell">{guest.guest_code}</td>
+                  <td class="whitespace-nowrap px-2 py-2 text-[10px] text-slate-500 sm:px-4 sm:py-3 sm:text-xs">
+                    {#if guest.invite_sent_at}
+                      <span class="sm:hidden">{new Date(guest.invite_sent_at).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: '2-digit' })}</span>
+                      <span class="hidden sm:inline">{new Date(guest.invite_sent_at).toLocaleDateString()}</span>
+                    {:else}
+                      —
+                    {/if}
                   </td>
-                  <td class="px-4 py-3">
+                  <td class="px-1 py-2 sm:px-4 sm:py-3">
                     {#if guest.whatsapp_number}
                       <a
                         href={buildWhatsappLink(guest.whatsapp_number, guest.first_name, guest.guest_code)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onclick={() => markInviteSent(guest)}
-                        class="inline-flex items-center gap-1.5 rounded-full bg-green-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-green-600"
+                        class="inline-flex whitespace-nowrap rounded-full bg-green-500 px-2 py-1.5 text-[10px] font-medium text-white transition hover:bg-green-600 sm:items-center sm:gap-1.5 sm:px-3 sm:text-xs"
                       >
-                        Send WhatsApp
+                        <span class="sm:hidden">Send</span>
+                        <span class="hidden sm:inline">Send WhatsApp</span>
                       </a>
                     {:else}
                       <span class="text-xs text-slate-400">No number</span>
@@ -848,8 +897,8 @@
       {/if}
     </div>
 
-    <!-- RSVP responses -->
-    <div class="mt-10">
+    {:else}
+    <div class="mt-8">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-medium text-slate-900">RSVP Responses ({rsvps.length})</h2>
         <button
@@ -873,13 +922,11 @@
             <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
                 <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Guest response</th>
-                <th class="px-4 py-3">People attending</th>
-                <th class="px-4 py-3">Partners attending</th>
+                <th class="px-4 py-3">Partners</th>
+                <th class="px-4 py-3">Confirmed attending</th>
+                <th class="px-4 py-3">Guest RSVP</th>
                 <th class="px-4 py-3">Dietary</th>
                 <th class="px-4 py-3">Song Request</th>
-                <th class="px-4 py-3">Notes</th>
-                <th class="px-4 py-3">Submitted</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -889,24 +936,18 @@
                     {rsvp.guests ? rsvp.guests.first_name : 'Unknown guest'}
                   </td>
                   <td class="px-4 py-3">
-                    <span
-                      class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.guest_attending
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'}"
-                    >
-                      {rsvp.guest_attending ? 'Attending' : 'Declined'}
-                    </span>
+                    <span class="text-slate-600">{getPartnerResponses(rsvp)}</span>
                   </td>
                   <td class="px-4 py-3 text-slate-600">{rsvp.guest_count}</td>
-                  <td class="px-4 py-3 text-slate-600">
-                    {rsvp.attending_partners?.map((partner) => partner.first_name).join(', ') || '—'}
+                  <td class="px-4 py-3">
+                    <span class="rounded-full px-2.5 py-1 text-xs font-medium {rsvp.attending
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'}">
+                      {rsvp.attending ? 'Attending' : 'Declined'}
+                    </span>
                   </td>
                   <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.dietary_requirements || '—'}</td>
                   <td class="px-4 py-3 max-w-[12rem] text-slate-600">{rsvp.song_request || '—'}</td>
-                  <td class="px-4 py-3 max-w-[14rem] text-slate-600">{rsvp.notes || '—'}</td>
-                  <td class="px-4 py-3 text-xs whitespace-nowrap text-slate-500">
-                    {new Date(rsvp.submitted_at).toLocaleString()}
-                  </td>
                 </tr>
               {/each}
             </tbody>
@@ -914,7 +955,9 @@
         </div>
       {/if}
     </div>
+    {/if}
 
+    {#if activeView === 'guests'}
     <!-- Curated gallery management -->
     <div class="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="text-lg font-medium text-slate-900">Photo Gallery</h2>
@@ -972,6 +1015,7 @@
         </div>
       {/if}
     </div>
+    {/if}
 
     <!-- Guest photo moderation -->
     <div class="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
