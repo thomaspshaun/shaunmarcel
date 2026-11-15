@@ -7,7 +7,7 @@ export const site = {
   tagline: "Together with their families",
   weddingDateLabel: "1 April 2027",
   // Counts down to the start of the ceremony.
-  countdownTargetIso: "2027-04-01T14:00:00+02:00",
+  countdownTargetIso: "2027-04-01T14:30:00+02:00",
   venueName: "Eikenhof Estate",
   region: "Cape Winelands · South Africa",
   // Shown in the RSVP section when set, e.g. "1 February 2027".
@@ -44,26 +44,26 @@ export const navLinks = [
 export const scheduleEvents = [
   {
     id: "welcome",
-    time: "13:30",
+    time: "14:00",
     title: "Guest arrival & welcome drink",
     description: "Guests arrive and are welcomed with a drink.",
-    startIso: "2027-04-01T13:30:00+02:00",
-    endIso: "2027-04-01T14:00:00+02:00",
+    startIso: "2027-04-01T14:00:00+02:00",
+    endIso: "2027-04-01T14:30:00+02:00",
   },
   {
     id: "ceremony",
-    time: "14:00",
+    time: "14:30",
     title: "Wedding ceremony",
     description: "The wedding ceremony at Eikenhof Estate.",
-    startIso: "2027-04-01T14:00:00+02:00",
-    endIso: "2027-04-01T14:45:00+02:00",
+    startIso: "2027-04-01T14:30:00+02:00",
+    endIso: "2027-04-01T15:30:00+02:00",
   },
   {
     id: "cocktails",
-    time: "14:45",
+    time: "15:30",
     title: "Cocktails & canapés",
     description: "Cocktails and canapés.",
-    startIso: "2027-04-01T14:45:00+02:00",
+    startIso: "2027-04-01T15:30:00+02:00",
     endIso: "2027-04-01T16:30:00+02:00",
   },
   {

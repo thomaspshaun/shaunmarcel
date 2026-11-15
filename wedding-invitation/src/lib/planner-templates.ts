@@ -115,19 +115,19 @@ export const checklistTemplates: Record<string, ChecklistTemplateItem[]> = {
     { subsection: "14:30 Ceremony", label: "Bridal party lined up" },
     { subsection: "14:30 Ceremony", label: "Photographer positioned" },
     {
-      subsection: "Cocktail Hour (15:00 – 16:30)",
+      subsection: "Cocktail Hour (15:30 – 16:30)",
       label: "Drinks service active",
     },
     {
-      subsection: "Cocktail Hour (15:00 – 16:30)",
+      subsection: "Cocktail Hour (15:30 – 16:30)",
       label: "Canapés circulating",
     },
     {
-      subsection: "Cocktail Hour (15:00 – 16:30)",
+      subsection: "Cocktail Hour (15:30 – 16:30)",
       label: "Family photos completed",
     },
     {
-      subsection: "Cocktail Hour (15:00 – 16:30)",
+      subsection: "Cocktail Hour (15:30 – 16:30)",
       label: "Couple portraits completed",
     },
     {
