@@ -836,7 +836,7 @@
           <table class="w-full table-fixed divide-y divide-slate-200 text-xs sm:table-auto sm:text-sm">
             <thead class="bg-slate-50 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
-                <th class="w-[20%] px-2 py-2 sm:w-auto sm:px-4 sm:py-3">Name</th>
+                <th class="w-[20%] px-2 py-2 sm:w-auto sm:px-4 sm:py-3">Name / RSVP</th>
                 <th class="w-[30%] px-2 py-2 sm:w-auto sm:px-4 sm:py-3">Partner</th>
                 <th class="hidden px-4 py-3 sm:table-cell">People invited</th>
                 <th class="hidden px-4 py-3 sm:table-cell">Code</th>
@@ -849,9 +849,19 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               {#each guests as guest (guest.id)}
+                {@const rsvp = rsvps.find((response) => response.guest_id === guest.id)}
                 <tr>
                   <td class="break-words px-2 py-2 font-medium text-slate-900 sm:px-4 sm:py-3">
+                    <span class="inline-flex items-center gap-1.5">
                     {guest.first_name}
+                      {#if rsvp}
+                        <span
+                          class="text-base leading-none {rsvp.attending ? 'text-green-600' : 'text-red-600'}"
+                          aria-label={rsvp.attending ? 'Household attending' : 'Household not attending'}
+                          title={rsvp.attending ? 'At least one person attending' : 'No one in the household is attending'}
+                        >{rsvp.attending ? '✓' : '✕'}</span>
+                      {/if}
+                    </span>
                   </td>
                   <td class="px-2 py-2 sm:px-4 sm:py-3">
                     <input
