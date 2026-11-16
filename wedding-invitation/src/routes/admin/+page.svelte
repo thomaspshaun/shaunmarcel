@@ -187,7 +187,7 @@
     const { data, error } = await supabase
       .from('guests')
       .select('*, partners:guest_partners(id, first_name, sort_order)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
 
     if (error) {
       guestsError = error.message;

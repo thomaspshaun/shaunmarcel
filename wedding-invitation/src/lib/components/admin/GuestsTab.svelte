@@ -19,7 +19,7 @@
     const { data, error: loadError } = await supabase
       .from('guests')
       .select('*, partners:guest_partners(id, first_name, sort_order)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
     if (loadError) {
       error = loadError.message;
     } else {
