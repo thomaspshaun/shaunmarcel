@@ -5,6 +5,7 @@
   import WeddingColors from '$lib/components/WeddingColors.svelte';
   import Timeline from '$lib/components/Timeline.svelte';
   import VenueMap from '$lib/components/VenueMap.svelte';
+  import Accommodations from '$lib/components/Accommodations.svelte';
   import RsvpForm from '$lib/components/RsvpForm.svelte';
   import PhotoGallery from '$lib/components/PhotoGallery.svelte';
   import Guestbook from '$lib/components/Guestbook.svelte';
@@ -47,6 +48,7 @@
   <Welcome />
   <Timeline />
   <VenueMap />
+  <Accommodations />
   <RsvpForm />
   <Registry />
   <WeddingColors />
