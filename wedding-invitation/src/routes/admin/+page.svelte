@@ -3,14 +3,16 @@
   import { supabase, type GuestRecord, type RsvpRecord, type GalleryPhoto, type GuestPhoto } from '$lib/supabase';
   import { buildWhatsappLink } from '$lib/utils/whatsapp';
   import { parseGuestCsv, type GuestCsvRow } from '$lib/utils/guestCsv';
+  import TodoListsTab from '$lib/components/admin/TodoListsTab.svelte';
   import type { Session } from '@supabase/supabase-js';
 
   const GALLERY_BUCKET = 'gallery';
   const GUEST_PHOTOS_BUCKET = 'guest-photos';
+  const SHOW_GUEST_PHOTO_MODERATION = false;
   const RSVP_YES_WARNING_THRESHOLD = 95;
   const RSVP_YES_LIMIT = 100;
 
-  let activeView = $state<'guests' | 'rsvps'>('guests');
+  let activeView = $state<'guests' | 'rsvps' | 'todos'>('guests');
   let session: Session | null = $state(null);
   let authLoading = $state(true);
 
@@ -91,7 +93,7 @@
         loadGuests();
         loadRsvps();
         loadGalleryPhotos();
-        loadAllGuestPhotos();
+        if (SHOW_GUEST_PHOTO_MODERATION) loadAllGuestPhotos();
       }
     });
 
@@ -107,7 +109,7 @@
         loadGuests();
         loadRsvps();
         loadGalleryPhotos();
-        loadAllGuestPhotos();
+        if (SHOW_GUEST_PHOTO_MODERATION) loadAllGuestPhotos();
       }
     });
 
@@ -665,7 +667,7 @@
   {:else}
     <div class="flex flex-wrap items-center justify-between gap-4">
       <h1 class="text-2xl font-medium text-slate-900">
-        {activeView === 'guests' ? 'Guest Management' : 'RSVP Responses'}
+        {activeView === 'guests' ? 'Guest Management' : activeView === 'rsvps' ? 'RSVP Responses' : 'To-do Lists'}
       </h1>
       <button
         type="button"
@@ -696,6 +698,16 @@
           : 'border-transparent text-slate-500 hover:text-slate-700'}"
       >
         RSVP Responses ({rsvps.length})
+      </button>
+      <button
+        type="button"
+        aria-current={activeView === 'todos' ? 'page' : undefined}
+        onclick={() => (activeView = 'todos')}
+        class="border-b-2 px-4 py-2 text-sm font-medium {activeView === 'todos'
+          ? 'border-rose-500 text-rose-700'
+          : 'border-transparent text-slate-500 hover:text-slate-700'}"
+      >
+        To-do Lists
       </button>
     </nav>
 
@@ -907,7 +919,7 @@
       {/if}
     </div>
 
-    {:else}
+    {:else if activeView === 'rsvps'}
     <div class="mt-8">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-medium text-slate-900">RSVP Responses ({rsvps.length})</h2>
@@ -1027,6 +1039,7 @@
     </div>
     {/if}
 
+    {#if SHOW_GUEST_PHOTO_MODERATION}
     <!-- Guest photo moderation -->
     <div class="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div class="flex items-center justify-between">
@@ -1081,5 +1094,9 @@
         </div>
       {/if}
     </div>
+    {/if}
+    {#if activeView === 'todos'}
+      <TodoListsTab />
+    {/if}
   {/if}
 </div>

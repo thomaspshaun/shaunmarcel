@@ -151,6 +151,23 @@ CREATE TABLE IF NOT EXISTS planner_notes (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS admin_todo_lists (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL CHECK (char_length(btrim(title)) BETWEEN 1 AND 120),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS admin_todo_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  list_id UUID NOT NULL REFERENCES admin_todo_lists(id) ON DELETE CASCADE,
+  title TEXT NOT NULL CHECK (char_length(btrim(title)) BETWEEN 1 AND 240),
+  status TEXT NOT NULL DEFAULT 'not_started'
+    CHECK (status IN ('not_started', 'in_progress', 'completed')),
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_guests_guest_code ON guests(guest_code);
 CREATE INDEX IF NOT EXISTS idx_rsvps_guest_id ON rsvps(guest_id);
 CREATE INDEX IF NOT EXISTS idx_comments_approved ON comments(approved, created_at DESC);
@@ -160,6 +177,7 @@ CREATE INDEX IF NOT EXISTS idx_guest_photos_approved ON guest_photos(approved, c
 CREATE INDEX IF NOT EXISTS idx_planner_checklist_section ON planner_checklist_items(section, sort_order);
 CREATE INDEX IF NOT EXISTS idx_planner_vendor_payments_vendor ON planner_vendor_payments(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_planner_seating_seats_table ON planner_seating_seats(table_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_admin_todo_items_list_order ON admin_todo_items(list_id, sort_order, created_at);
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security
@@ -183,6 +201,8 @@ ALTER TABLE planner_vendor_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planner_seating_tables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planner_seating_seats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planner_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_todo_lists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_todo_items ENABLE ROW LEVEL SECURITY;
 
 -- No direct table policies are created for guests/rsvps: all access goes
 -- through the RPC functions below, which run with the table owner's
@@ -432,6 +452,17 @@ CREATE POLICY "Admin can manage seating seats" ON planner_seating_seats
 DROP POLICY IF EXISTS "Admin can manage planner notes" ON planner_notes;
 CREATE POLICY "Admin can manage planner notes" ON planner_notes
   FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admins can manage to-do lists" ON admin_todo_lists;
+CREATE POLICY "Admins can manage to-do lists" ON admin_todo_lists
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "Admins can manage to-do items" ON admin_todo_items;
+CREATE POLICY "Admins can manage to-do items" ON admin_todo_items
+  FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON admin_todo_lists TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON admin_todo_items TO authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Storage buckets (photo gallery + guest uploads)
