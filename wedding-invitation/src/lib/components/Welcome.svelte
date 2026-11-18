@@ -14,7 +14,7 @@
   <div class="mx-auto max-w-2xl text-center" use:reveal>
     <p class="font-script text-5xl text-champagne sm:text-6xl">Our Wedding</p>
     <p class="font-display mt-8 text-2xl leading-relaxed text-ink italic sm:text-3xl">
-      We'd love for you to join us on 1 April 2027 at {site.venueName} in the Cape Winelands.
+      The Padachi and Jibodh families would love for you to join us on 1 April 2027 at {site.venueName} in the Cape Winelands.
     </p>
     <Sprig class="mx-auto mt-10 h-5 w-32 text-champagne" />
 
