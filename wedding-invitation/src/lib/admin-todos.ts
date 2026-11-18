@@ -80,6 +80,19 @@ export async function updateTodoTask(
   if (error) throw new Error(`Could not update task: ${error.message}`);
 }
 
+export async function moveTodoTask(
+  id: string,
+  targetListId: string,
+  targetOrder: number
+): Promise<void> {
+  const { error } = await supabase.rpc("move_admin_todo_item", {
+    p_item_id: id,
+    p_target_list_id: targetListId,
+    p_target_order: targetOrder
+  });
+  if (error) throw new Error(`Could not move task: ${error.message}`);
+}
+
 export async function deleteTodoTask(id: string): Promise<void> {
   const { error } = await supabase.from("admin_todo_items").delete().eq("id", id);
   if (error) throw new Error(`Could not delete task: ${error.message}`);
